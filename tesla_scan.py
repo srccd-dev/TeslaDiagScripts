@@ -7,6 +7,7 @@ import os
 from tscan.core import Decoder
 from tscan.capture import parse_capture_file, capture_live
 from tscan.faults import active_faults
+from tscan.dump import dump_signals
 
 REPO = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DBC = os.path.join(REPO, "data", "tesla_models.dbc")
@@ -37,6 +38,22 @@ def cmd_faults(args):
         print(f"        evidence: 0x{f.can_id:03X} = {f.evidence}\n")
 
 
+def cmd_dump(args):
+    decoder = Decoder(args.dbc)
+    _meta, frames = parse_capture_file(args.capture)
+    grouped = dump_signals(decoder, frames, module=args.module, grep=args.grep)
+    if not grouped:
+        print("No signals matched.")
+        return
+    total = sum(len(v) for v in grouped.values())
+    print(f"{total} signals across {len(grouped)} module(s):\n")
+    for mod in sorted(grouped):
+        print(f"=== {mod} ===")
+        for sig, val in grouped[mod]:
+            print(f"  {sig:42s} = {val}")
+        print()
+
+
 def cmd_capture(args):
     ids = args.ids.split(",") if args.ids else None
     out = capture_live(args.port, args.secs, ids=ids, out_path=args.out)
@@ -59,6 +76,13 @@ def main(argv=None):
     f.add_argument("--dbc", default=DEFAULT_DBC)
     f.add_argument("--descriptions", default=DEFAULT_OVERRIDES)
     f.set_defaults(func=cmd_faults)
+
+    dp = sub.add_parser("dump", help="decode every signal in a capture, by module")
+    dp.add_argument("capture", help="capture file path")
+    dp.add_argument("--module", help="case-insensitive module label filter")
+    dp.add_argument("--grep", help="case-insensitive regex on signal name")
+    dp.add_argument("--dbc", default=DEFAULT_DBC)
+    dp.set_defaults(func=cmd_dump)
 
     args = ap.parse_args(argv)
     args.func(args)

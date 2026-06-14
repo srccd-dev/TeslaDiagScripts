@@ -12,3 +12,13 @@ def test_parse_capture_file_reads_meta_and_frames():
     assert t_ms == 0
     assert can_id == 0x219
     assert data == bytes([0x00, 0x80, 0x7F, 0x00, 0x82, 0x02, 0x00, 0x04])
+
+
+def test_writer_roundtrip(tmp_path):
+    from tscan.capture import CaptureWriter, parse_capture_file
+    p = tmp_path / "cap.csv"
+    with CaptureWriter(str(p), meta={"adapter": "X", "bus": "CAN3"}) as w:
+        w.write(0, 0x219, bytes([0x00, 0x80, 0x7F, 0x00, 0x82, 0x02, 0x00, 0x04]))
+    meta, frames = parse_capture_file(str(p))
+    assert meta["bus"] == "CAN3"
+    assert frames[0][1] == 0x219

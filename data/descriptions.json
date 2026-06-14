@@ -1,1 +1,4 @@
-{}
+{
+  "BMS_f027_SW_Drive_Iso": "Drive-unit isolation fault (SW_Drive_Iso) - HV isolation low in a drive-unit/heater circuit; 'Unable to start vehicle'. DBC mislabels this slot 'Unused_27'.",
+  "BMS_w172_SW_Drive_Iso_Warning": "Drive-unit isolation warning - isolation degrading in a drive-unit/heater HV circuit."
+}

@@ -1,0 +1,5 @@
+# tesla_scan capture v1
+# adapter=STN1155 v5.6.19 port=COM5 protocol=ISO15765-11/500 bus=CAN3 start=2026-06-14T14:22:21
+t_ms,can_id,data_hex
+0,219,00807F0082020004
+30,219,00807F0082020004

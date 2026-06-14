@@ -17,35 +17,68 @@ Club / Tesla Owners Online diagnostic-port threads, the OpenVehicles project,
 and the `cantools` library. Contributions, corrections, and shared captures are
 welcome.
 
-## What it does (planned, phased)
+## Status
 
 A single CLI, `tesla_scan.py`, with subcommands over a shared `cantools`-backed
-decode core:
+decode core. Implemented and unit-tested (15 tests, no vehicle required):
 
-- `capture` — record raw CAN frames to a timestamped, re-decodable log.
-- `faults` — list active fault/alert codes with plain-language meaning + the
-  module reporting them.
-- `dump` — decode every signal the DBC knows, grouped by module/ECU.
-- `trend` — store captures in SQLite and diff against a baseline to flag new
-  faults and signal drift over time.
+- **`capture`** — record raw CAN frames to a timestamped, re-decodable log
+  (full-bus, or hardware-filtered to specific IDs on a genuine STN adapter).
+- **`faults`** — list active fault/alert codes with plain-language meaning and
+  the module reporting them.
+- **`dump`** — decode every signal the DBC knows in a capture, grouped by
+  module/ECU (`--module`, `--grep` filters). ~2,000 signals came out of a 45 s
+  capture on a 2016 Model X — vs the ~300 typical surface apps show.
 
-See `docs/superpowers/specs/` for the design.
+Planned / not yet built:
 
-## Usage (Phase 0/1)
+- **`trend`** — store captures in SQLite and diff against a baseline to flag new
+  faults and signal drift over time (design in `docs/superpowers/specs/`).
+- **actions / `clear-dtc`** — an opt-in command-sending capability, developed on
+  a separate experimental branch (see Safety & scope). Not on `main`.
+
+See `docs/superpowers/specs/` and `docs/superpowers/plans/` for design + plan.
+
+## Usage
 
 ```bash
 pip install -r requirements.txt
 
 # capture raw frames (read-only; one app may hold the adapter at a time)
 python tesla_scan.py capture --port COM5 --secs 60 --out captures/run1.csv
-# slow/targeted: only specific IDs
+# slow/targeted: hardware-filter to specific 11-bit IDs (low frame loss)
 python tesla_scan.py capture --port COM5 --secs 150 --ids 219,021,061 --out captures/iso.csv
 
-# decode active fault/alert codes from a capture
+# active fault/alert codes from a capture
 python tesla_scan.py faults captures/run1.csv
+
+# every decoded signal, grouped by module (optionally filtered)
+python tesla_scan.py dump captures/run1.csv
+python tesla_scan.py dump captures/run1.csv --module "Battery"
+python tesla_scan.py dump captures/run1.csv --grep isolation
 ```
 
-Curate human descriptions in `data/descriptions.json` (override key = exact signal name).
+Curate human descriptions in `data/descriptions.json` (override key = exact
+signal name). Captures live under `captures/` and are git-ignored — no vehicle
+data is committed.
+
+## Known limitations (read before trusting output)
+
+Early, honest work — corrections welcome:
+
+- **`faults` over-reports.** It flags every non-zero `_w/f/u###_` bit plus a
+  small state watch-list. That includes chronic version/config flags and
+  permission/status bits (e.g. `noChargeAllowed` when parked), so the raw list
+  mixes real faults with noise. A severity/relevance layer is the next refinement.
+- **Module map is partial.** Unmapped name prefixes show as `Unknown (PREFIX)`.
+- **DBC vs firmware gaps.** The community DBC lags some firmware: e.g.
+  `BMS_f027` is the real-world drive-unit isolation fault (`SW_Drive_Iso`) but is
+  labeled `Unused_27` in the DBC. The DBC also contains a malformed message
+  (`BCCEN_udsResponse`), so it is loaded `strict=False`.
+- **Frame-length mismatches.** Some frames arrive shorter than the DBC declares;
+  decoding tolerates truncation, but a guard is on the roadmap.
+- **Single bus.** Only the CAN pair the OBD adapter bridges is visible; signals
+  on other buses won't appear.
 
 ## Safety & scope
 

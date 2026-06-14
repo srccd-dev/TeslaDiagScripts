@@ -1,0 +1,6 @@
+# Normalize line endings: store LF in the repo, check out native on each OS.
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.dbc text eol=lf
+*.json text eol=lf

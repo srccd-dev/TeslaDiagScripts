@@ -31,6 +31,22 @@ decode core:
 
 See `docs/superpowers/specs/` for the design.
 
+## Usage (Phase 0/1)
+
+```bash
+pip install -r requirements.txt
+
+# capture raw frames (read-only; one app may hold the adapter at a time)
+python tesla_scan.py capture --port COM5 --secs 60 --out captures/run1.csv
+# slow/targeted: only specific IDs
+python tesla_scan.py capture --port COM5 --secs 150 --ids 219,021,061 --out captures/iso.csv
+
+# decode active fault/alert codes from a capture
+python tesla_scan.py faults captures/run1.csv
+```
+
+Curate human descriptions in `data/descriptions.json` (override key = exact signal name).
+
 ## Safety & scope
 
 - **The published suite is read-only.** `capture`, `faults`, `dump`, and

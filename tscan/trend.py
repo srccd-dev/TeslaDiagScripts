@@ -153,5 +153,20 @@ class TrendStore:
                     drifts.append({"signal": sig, "from": b["v_last"], "to": t["v_last"]})
         return {"new_faults": new_faults, "state_changes": state_changes, "drifts": drifts}
 
+    def history(self, signal):
+        cur = self.conn.execute(
+            "SELECT s.capture_id, c.started_at, s.v_last, s.named_state "
+            "FROM signal_samples s JOIN captures c ON c.id=s.capture_id "
+            "WHERE s.signal=? ORDER BY s.capture_id", (signal,))
+        return [{"capture_id": r[0], "started_at": r[1],
+                 "v_last": r[2], "named_state": r[3]} for r in cur.fetchall()]
+
+    def set_threshold(self, signal, abs_delta=None, pct_delta=None):
+        self.conn.execute(
+            "INSERT INTO drift_thresholds (signal, abs_delta, pct_delta) VALUES (?,?,?) "
+            "ON CONFLICT(signal) DO UPDATE SET abs_delta=excluded.abs_delta, "
+            "pct_delta=excluded.pct_delta", (signal, abs_delta, pct_delta))
+        self.conn.commit()
+
     def close(self):
         self.conn.close()

@@ -64,3 +64,16 @@ def test_diff_detects_new_fault_state_change_and_drift(decoder, tmp_path):
     # isolationResistance 100 -> 0: a drift
     assert any(dr["signal"] == "BMS_isolationResistance" for dr in d["drifts"])
     store.close()
+
+
+def test_history_and_threshold(decoder, tmp_path):
+    from tscan.trend import TrendStore
+    store = TrendStore(str(tmp_path / "t.sqlite"))
+    store.ingest(decoder, _write_fixture(tmp_path, "h1.csv", REAL_0219))
+    store.ingest(decoder, _write_fixture(tmp_path, "h2.csv", REAL_0219))
+    hist = store.history("BMS_isolationResistance")
+    assert len(hist) == 2
+    assert hist[0]["v_last"] == 0
+    store.set_threshold("BMS_isolationResistance", abs_delta=5.0, pct_delta=None)
+    assert store._thresholds()["BMS_isolationResistance"] == (5.0, None)
+    store.close()

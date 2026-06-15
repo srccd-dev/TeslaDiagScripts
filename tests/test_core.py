@@ -12,3 +12,16 @@ def test_decode_unknown_id_returns_none(decoder):
 
 def test_message_name(decoder):
     assert decoder.message_name(0x219) == "BMS_status"
+
+
+def test_module_for_maps_diagnostic_prefixes():
+    from tscan.core import module_for
+    assert module_for("PTC_FailHighVoltageSensor_Flag") == "PTC Heater"
+    assert module_for("DCDC_outputVoltage") == "DC-DC Converter"
+    assert module_for("THC_12VpowerNeeded") == "Thermal Controller"
+    assert module_for("RCM_buckleDriverStatus") == "Restraint Control (airbags)"
+
+
+def test_module_for_unknown_prefix_falls_back():
+    from tscan.core import module_for
+    assert module_for("ZZZ_foo") == "Unknown (ZZZ)"

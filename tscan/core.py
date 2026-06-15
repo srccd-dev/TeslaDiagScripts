@@ -1,17 +1,35 @@
 """cantools-backed decode engine for Tesla CAN frames."""
 import cantools
 
-# message/signal name prefix -> human module label
+# message/signal name prefix -> human module label.
+# Curated and partial: labels are added only where the prefix's signals make the
+# module's function clear. Unmapped prefixes fall back to "Unknown (PREFIX)"
+# rather than guess. Corrections welcome.
 MODULE_PREFIXES = {
+    # HV powertrain / energy
     "BMS": "Battery Management", "DI": "Drive Inverter",
     "DIS": "Drive Inverter", "DIR": "Rear Drive Inverter",
-    "DIF": "Front Drive Inverter", "GTW": "Gateway",
-    "TAS": "Air Suspension", "CP": "Charge Port", "CHG": "Charger",
-    "CHGS": "Charger", "UI": "User Interface (MCU)", "PCS": "Power Conversion",
+    "DIF": "Front Drive Inverter", "PCS": "Power Conversion",
+    "DCDC": "DC-DC Converter", "PTC": "PTC Heater",
+    "CHG": "Charger", "CHGS": "Charger", "CHGPH1": "Charger Phase 1",
+    "CHGPH2": "Charger Phase 2", "CHGPH3": "Charger Phase 3",
+    "CP": "Charge Port",
+    # thermal
+    "THC": "Thermal Controller",
+    # chassis / dynamics
+    "TAS": "Air Suspension", "EPAS": "Steering", "EPAS3P": "Steering (EPAS3)",
+    "SCCM": "Steering Column", "IBST": "iBooster Brake", "EPBM": "Electronic Park Brake",
+    "ESP": "Stability Control",
+    # ADAS / autopilot
+    "DAS": "Autopilot", "APP": "Autopilot (cameras)", "APS": "Driver Assist (ADAS)",
+    "PARK": "Park Assist",
+    # body / interior / infotainment
+    "GTW": "Gateway", "UI": "User Interface (MCU)", "MCU": "Media Control Unit",
+    "IC": "Instrument Cluster", "TUNER": "Radio Tuner",
+    "RCM": "Restraint Control (airbags)", "DDM": "Driver Door Module",
     "VCFRONT": "Front Body Controller", "VCREAR": "Rear Body Controller",
-    "EPAS": "Steering", "IBST": "iBooster Brake", "DAS": "Autopilot",
-    "ESP": "Stability Control", "SCCM": "Steering Column",
-    "PARK": "Park Assist", "BCFRONT": "Body Controller Front",
+    "BCFRONT": "Body Controller Front", "BCREAR": "Body Controller Rear",
+    "BCCEN": "Body Controller Center",
 }
 
 

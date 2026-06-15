@@ -241,10 +241,16 @@ passive while developing command-sending separately.
 - NRC decode tested against canned negative responses.
 
 ## 11. Open questions / future
-- **Fault relevance layer (next `faults` refinement):** rank/filter active codes
-  by Tessie fleet incidence rate (e.g. `BMS_f027` is `<0.01%` = rare/significant;
-  multi-percent codes are fleet noise). Addresses the over-reporting where every
-  non-zero `_w/f/u###_` bit is flagged.
+- **Fault relevance layer (next `faults` refinement):** the goal is to separate
+  the root fault from its consequences, not merely suppress common codes.
+  - **Root-cause vs downstream grouping** is the primary lens. Many active codes
+    are *consequences* of one root (e.g. `BMS_f027` drive-iso → `noChargeAllowed`,
+    `noSupportAllowed`, limp/load-shed). Group consequences under the root and
+    rank the root; still show downstream codes as corroborating evidence.
+  - **Tessie fleet incidence** is one input, not the whole answer (`BMS_f027` is
+    `<0.01%` = rare/significant). But do NOT down-rank a common code purely for
+    being common: a high-incidence code that correlates with an observed symptom
+    is valid signal (e.g. `noChargeAllowed` was real — the car refused the cable).
 - **Authoritative descriptions via link-out (implemented):** `faults` links each
   code to a Tessie alert search on the stable stem (`tessie_link`) rather than
   scraping/republishing. `descriptions.json` holds our own curated short notes.

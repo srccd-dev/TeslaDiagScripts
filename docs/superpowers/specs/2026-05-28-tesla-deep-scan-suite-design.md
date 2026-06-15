@@ -241,6 +241,13 @@ passive while developing command-sending separately.
 - NRC decode tested against canned negative responses.
 
 ## 11. Open questions / future
+- **Fault relevance layer (next `faults` refinement):** rank/filter active codes
+  by Tessie fleet incidence rate (e.g. `BMS_f027` is `<0.01%` = rare/significant;
+  multi-percent codes are fleet noise). Addresses the over-reporting where every
+  non-zero `_w/f/u###_` bit is flagged.
+- **Authoritative descriptions via link-out (implemented):** `faults` links each
+  code to a Tessie alert search on the stable stem (`tessie_link`) rather than
+  scraping/republishing. `descriptions.json` holds our own curated short notes.
 - Long-form fault descriptions: seed `descriptions.json` from the car-screen
   text we already have; grow as encountered.
 - Multi-bus / Ethernet port: format already records `bus`; capture backend can

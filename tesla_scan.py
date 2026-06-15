@@ -8,6 +8,7 @@ from tscan.core import Decoder
 from tscan.capture import parse_capture_file, capture_live
 from tscan.faults import active_faults
 from tscan.dump import dump_signals
+from tscan.meaning import tessie_link
 
 REPO = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DBC = os.path.join(REPO, "data", "tesla_models.dbc")
@@ -35,7 +36,8 @@ def cmd_faults(args):
         tag = f.code or f.klass
         print(f"  [{f.module}]  {tag}  {f.signal}")
         print(f"        meaning : {f.meaning}")
-        print(f"        evidence: 0x{f.can_id:03X} = {f.evidence}\n")
+        print(f"        evidence: 0x{f.can_id:03X} = {f.evidence}")
+        print(f"        tessie  : {tessie_link(f.signal)}\n")
 
 
 def cmd_dump(args):

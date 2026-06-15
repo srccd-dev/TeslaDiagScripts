@@ -14,8 +14,8 @@ This grew out of a real diagnosis of a 2016 Model X P90D and is decoded against
 the community-maintained S/X DBC. It builds on a lot of prior community
 effort — ScanMyTesla, the DBC reverse-engineering community, the Tesla Motors
 Club / Tesla Owners Online diagnostic-port threads, the OpenVehicles project,
-and the `cantools` library. Contributions, corrections, and shared captures are
-welcome.
+[Tessie's alert directory](https://stats.tessie.com/alerts), and the `cantools`
+library. Contributions, corrections, and shared captures are welcome.
 
 ## Status
 
@@ -24,8 +24,9 @@ decode core. Implemented and unit-tested (15 tests, no vehicle required):
 
 - **`capture`** — record raw CAN frames to a timestamped, re-decodable log
   (full-bus, or hardware-filtered to specific IDs on a genuine STN adapter).
-- **`faults`** — list active fault/alert codes with plain-language meaning and
-  the module reporting them.
+- **`faults`** — list active fault/alert codes with plain-language meaning, the
+  module reporting them, and a link out to [Tessie's alert page](https://stats.tessie.com/alerts)
+  for each code's authoritative description (we link, never scrape).
 - **`dump`** — decode every signal the DBC knows in a capture, grouped by
   module/ECU (`--module`, `--grep` filters). ~2,000 signals came out of a 45 s
   capture on a 2016 Model X — vs the ~300 typical surface apps show.
@@ -69,7 +70,10 @@ Early, honest work — corrections welcome:
 - **`faults` over-reports.** It flags every non-zero `_w/f/u###_` bit plus a
   small state watch-list. That includes chronic version/config flags and
   permission/status bits (e.g. `noChargeAllowed` when parked), so the raw list
-  mixes real faults with noise. A severity/relevance layer is the next refinement.
+  mixes real faults with noise. Each code links out to Tessie for triage in the
+  meantime; the planned fix is a **relevance layer ranking by Tessie fleet
+  incidence rate** (a `<0.01%` code is genuinely rare/significant; a multi-percent
+  one is fleet noise).
 - **Module map is partial.** Unmapped name prefixes show as `Unknown (PREFIX)`.
 - **DBC vs firmware gaps.** The community DBC lags some firmware: e.g.
   `BMS_f027` is the real-world drive-unit isolation fault (`SW_Drive_Iso`) but is

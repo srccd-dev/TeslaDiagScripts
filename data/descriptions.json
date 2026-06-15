@@ -1,4 +1,4 @@
 {
-  "BMS_f027_SW_Drive_Iso": "Drive-unit isolation fault (SW_Drive_Iso) - HV isolation low in a drive-unit/heater circuit; 'Unable to start vehicle'. DBC mislabels this slot 'Unused_27'.",
-  "BMS_w172_SW_Drive_Iso_Warning": "Drive-unit isolation warning - isolation degrading in a drive-unit/heater HV circuit."
+  "BMS_f027_Unused_27": "BMS_f027 - real name SW_Drive_Iso_Repeated; this DBC mislabels the slot 'Unused_27'. Drive-unit isolation fault: HV isolation dropped below the minimum threshold multiple times while driving, so the BMS latched a repeated-drop counter -> 'vehicle will not start'. Does NOT self-clear; clears only via a manual isolation-counter reset (Toolbox-level). Fix the physical leak first (battery-heater / drive-unit; defect, contamination, or moisture), THEN reset. See the tessie link for the authoritative description.",
+  "BMS_w027_Unused_27": "BMS_w027 - drive-unit isolation warning (DBC mislabels slot 'Unused_27'); the warning-level precursor to f027. See the tessie link for the authoritative description."
 }

@@ -25,6 +25,21 @@ CREATE TABLE IF NOT EXISTS drift_thresholds (
 CREATE INDEX IF NOT EXISTS idx_samples_signal ON signal_samples(signal);
 """
 
+DEFAULT_PCT_DELTA = 20.0   # flag numeric drift > 20% by default
+DEFAULT_ABS_DELTA = None
+
+
+def is_drift(base_last, targ_last, abs_delta, pct_delta):
+    d = abs(targ_last - base_last)
+    if abs_delta is not None and d >= abs_delta:
+        return True
+    if pct_delta is not None and base_last != 0 and (d / abs(base_last)) * 100 >= pct_delta:
+        return True
+    # near-zero baseline: any change of >= 1 unit counts (avoids div-by-zero blind spot)
+    if base_last == 0 and d >= 1:
+        return True
+    return False
+
 
 def aggregate_signals(decoder, frames):
     """Decode every frame and roll each signal up across the capture.
@@ -95,6 +110,48 @@ class TrendStore:
         cur = self.conn.execute("SELECT id FROM captures WHERE is_baseline=1 LIMIT 1")
         row = cur.fetchone()
         return row[0] if row else None
+
+    def _samples(self, capture_id):
+        cur = self.conn.execute(
+            "SELECT signal, v_last, named_state FROM signal_samples WHERE capture_id=?",
+            (capture_id,))
+        return {r[0]: {"v_last": r[1], "named_state": r[2]} for r in cur.fetchall()}
+
+    def _active_fault_signals(self, capture_id):
+        cur = self.conn.execute(
+            "SELECT signal FROM faults WHERE capture_id=? AND active=1", (capture_id,))
+        return {r[0] for r in cur.fetchall()}
+
+    def _thresholds(self):
+        cur = self.conn.execute(
+            "SELECT signal, abs_delta, pct_delta FROM drift_thresholds")
+        return {r[0]: (r[1], r[2]) for r in cur.fetchall()}
+
+    def diff(self, capture_id, baseline_id=None):
+        base_id = baseline_id if baseline_id is not None else self.baseline_id()
+        if base_id is None:
+            raise ValueError("no baseline set; call set_baseline() first")
+        base, targ = self._samples(base_id), self._samples(capture_id)
+        base_faults = self._active_fault_signals(base_id)
+        thr = self._thresholds()
+
+        new_faults = [{"signal": s} for s in (
+            self._active_fault_signals(capture_id) - base_faults)]
+
+        state_changes, drifts = [], []
+        for sig, t in targ.items():
+            b = base.get(sig)
+            if b is None:
+                continue
+            if t["named_state"] is not None or b["named_state"] is not None:
+                if t["named_state"] != b["named_state"]:
+                    state_changes.append(
+                        {"signal": sig, "from": b["named_state"], "to": t["named_state"]})
+            else:
+                a_d, p_d = thr.get(sig, (DEFAULT_ABS_DELTA, DEFAULT_PCT_DELTA))
+                if is_drift(b["v_last"], t["v_last"], a_d, p_d):
+                    drifts.append({"signal": sig, "from": b["v_last"], "to": t["v_last"]})
+        return {"new_faults": new_faults, "state_changes": state_changes, "drifts": drifts}
 
     def close(self):
         self.conn.close()

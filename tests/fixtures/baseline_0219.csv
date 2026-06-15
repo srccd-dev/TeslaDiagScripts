@@ -1,0 +1,4 @@
+# tesla_scan capture v1
+# bus=CAN3
+t_ms,can_id,data_hex
+0,219,0080020582020004

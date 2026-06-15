@@ -1,4 +1,6 @@
+import os
 from tscan.trend import aggregate_signals
+from tests.conftest import FIXTURES
 
 REAL_0219 = bytes([0x00, 0x80, 0x7F, 0x00, 0x82, 0x02, 0x00, 0x04])  # FAULT, iso=0
 
@@ -45,4 +47,20 @@ def test_baseline_set_and_get(decoder, tmp_path):
     assert store.baseline_id() == c1
     store.set_baseline(c2)        # moves baseline; only one at a time
     assert store.baseline_id() == c2
+    store.close()
+
+
+def test_diff_detects_new_fault_state_change_and_drift(decoder, tmp_path):
+    from tscan.trend import TrendStore
+    store = TrendStore(str(tmp_path / "t.sqlite"))
+    base = store.ingest(decoder, os.path.join(FIXTURES, "baseline_0219.csv"))
+    targ = store.ingest(decoder, os.path.join(FIXTURES, "sample_0219.csv"))
+    store.set_baseline(base)
+    d = store.diff(targ)
+    # BMS_state went STANDBY -> FAULT: a new fault and a state change
+    assert any(f["signal"] == "BMS_state" for f in d["new_faults"])
+    assert any(c["signal"] == "BMS_state" and c["from"] == "STANDBY"
+               and c["to"] == "FAULT" for c in d["state_changes"])
+    # isolationResistance 100 -> 0: a drift
+    assert any(dr["signal"] == "BMS_isolationResistance" for dr in d["drifts"])
     store.close()

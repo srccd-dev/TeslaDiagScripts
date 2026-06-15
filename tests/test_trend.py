@@ -11,3 +11,26 @@ def test_aggregate_numeric_and_enum(decoder):
     assert agg["BMS_isolationResistance"]["named_state"] is None
     assert agg["BMS_state"]["named_state"] == "FAULT"
     assert agg["BMS_state"]["module"] == "Battery Management"
+
+
+def _write_fixture(tmp_path, name, data):
+    p = tmp_path / name
+    p.write_text("# tesla_scan capture v1\n# bus=CAN3\nt_ms,can_id,data_hex\n"
+                 f"0,219,{data.hex().upper()}\n", encoding="utf-8")
+    return str(p)
+
+
+def test_ingest_creates_rows(decoder, tmp_path):
+    from tscan.trend import TrendStore
+    store = TrendStore(str(tmp_path / "t.sqlite"))
+    cid = store.ingest(decoder, _write_fixture(tmp_path, "c.csv", REAL_0219))
+    cur = store.conn.execute("SELECT COUNT(*) FROM captures")
+    assert cur.fetchone()[0] == 1
+    cur = store.conn.execute(
+        "SELECT v_last FROM signal_samples WHERE signal='BMS_isolationResistance' AND capture_id=?",
+        (cid,))
+    assert cur.fetchone()[0] == 0
+    cur = store.conn.execute(
+        "SELECT COUNT(*) FROM faults WHERE capture_id=? AND active=1", (cid,))
+    assert cur.fetchone()[0] >= 1   # BMS_state=FAULT
+    store.close()

@@ -1,5 +1,29 @@
 """Phase 3: SQLite trend store + capture diffing."""
+import sqlite3
 from tscan.core import module_for
+from tscan.capture import parse_capture_file
+from tscan.faults import active_faults
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS captures (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at TEXT, file TEXT, adapter TEXT, bus TEXT, notes TEXT,
+  is_baseline INTEGER DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS signal_samples (
+  capture_id INTEGER REFERENCES captures(id),
+  signal TEXT, module TEXT, unit TEXT,
+  v_min REAL, v_max REAL, v_last REAL, named_state TEXT, n INTEGER
+);
+CREATE TABLE IF NOT EXISTS faults (
+  capture_id INTEGER REFERENCES captures(id),
+  code TEXT, module TEXT, signal TEXT, meaning TEXT, active INTEGER
+);
+CREATE TABLE IF NOT EXISTS drift_thresholds (
+  signal TEXT PRIMARY KEY, abs_delta REAL, pct_delta REAL
+);
+CREATE INDEX IF NOT EXISTS idx_samples_signal ON signal_samples(signal);
+"""
 
 
 def aggregate_signals(decoder, frames):
@@ -31,3 +55,36 @@ def aggregate_signals(decoder, frames):
                 a["named_state"] = named
                 a["n"] += 1
     return agg
+
+
+class TrendStore:
+    def __init__(self, db_path):
+        self.conn = sqlite3.connect(db_path)
+        self.conn.executescript(_SCHEMA)
+        self.conn.commit()
+
+    def ingest(self, decoder, capture_path, overrides=None, notes=None):
+        meta, frames = parse_capture_file(capture_path)
+        agg = aggregate_signals(decoder, frames)
+        cur = self.conn.execute(
+            "INSERT INTO captures (started_at, file, adapter, bus, notes) "
+            "VALUES (?,?,?,?,?)",
+            (meta.get("start"), capture_path, meta.get("adapter"),
+             meta.get("bus"), notes))
+        cid = cur.lastrowid
+        self.conn.executemany(
+            "INSERT INTO signal_samples "
+            "(capture_id, signal, module, unit, v_min, v_max, v_last, named_state, n) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            [(cid, s, a["module"], a["unit"], a["v_min"], a["v_max"],
+              a["v_last"], a["named_state"], a["n"]) for s, a in agg.items()])
+        faults = active_faults(decoder, frames, overrides=overrides)
+        self.conn.executemany(
+            "INSERT INTO faults (capture_id, code, module, signal, meaning, active) "
+            "VALUES (?,?,?,?,?,1)",
+            [(cid, f.code, f.module, f.signal, f.meaning) for f in faults])
+        self.conn.commit()
+        return cid
+
+    def close(self):
+        self.conn.close()

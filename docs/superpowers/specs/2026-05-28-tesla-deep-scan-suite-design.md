@@ -27,7 +27,8 @@ adapter bridges (the same bus SMT uses — carries BMS/powertrain broadcast).
 - Capture raw CAN frames to file (decoupled from decode).
 - Decode all DBC-known signals via `cantools`, grouped by module/ECU.
 - Surface active fault/alert codes with derived plain-language meaning.
-- Track signals over time in SQLite and diff against a baseline.
+- Track signals over time in SQLite and diff against a baseline. *(Implemented —
+  `trend` subcommand; see §4.5/§6 and the Phase 3 plan.)*
 
 ### Out of scope (explicit non-goals)
 - **Fixing the current car fault** (Track 1 — the `tesla_iso_capture.py` work).

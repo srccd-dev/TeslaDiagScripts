@@ -20,7 +20,7 @@ library. Contributions, corrections, and shared captures are welcome.
 ## Status
 
 A single CLI, `tesla_scan.py`, with subcommands over a shared `cantools`-backed
-decode core. Implemented and unit-tested (15 tests, no vehicle required):
+decode core. Implemented and unit-tested (25 tests, no vehicle required):
 
 - **`capture`** — record raw CAN frames to a timestamped, re-decodable log
   (full-bus, or hardware-filtered to specific IDs on a genuine STN adapter).
@@ -30,11 +30,12 @@ decode core. Implemented and unit-tested (15 tests, no vehicle required):
 - **`dump`** — decode every signal the DBC knows in a capture, grouped by
   module/ECU (`--module`, `--grep` filters). ~2,000 signals came out of a 45 s
   capture on a 2016 Model X — vs the ~300 typical surface apps show.
+- **`trend`** — store captures in SQLite and diff a capture against a baseline to
+  flag new faults, enum state changes, and numeric drift over time
+  (`ingest` / `baseline` / `diff` / `history`).
 
 Planned / not yet built:
 
-- **`trend`** — store captures in SQLite and diff against a baseline to flag new
-  faults and signal drift over time (design in `docs/superpowers/specs/`).
 - **actions / `clear-dtc`** — an opt-in command-sending capability, developed on
   a separate experimental branch (see Safety & scope). Not on `main`.
 
@@ -57,6 +58,13 @@ python tesla_scan.py faults captures/run1.csv
 python tesla_scan.py dump captures/run1.csv
 python tesla_scan.py dump captures/run1.csv --module "Battery"
 python tesla_scan.py dump captures/run1.csv --grep isolation
+
+# trend: ingest captures, set a baseline, diff a later capture against it
+python tesla_scan.py trend ingest captures/run1.csv
+python tesla_scan.py trend baseline 1
+python tesla_scan.py trend ingest captures/run2.csv
+python tesla_scan.py trend diff 2
+python tesla_scan.py trend history BMS_isolationResistance
 ```
 
 Curate human descriptions in `data/descriptions.json` (override key = exact

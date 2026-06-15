@@ -77,3 +77,16 @@ def test_history_and_threshold(decoder, tmp_path):
     store.set_threshold("BMS_isolationResistance", abs_delta=5.0, pct_delta=None)
     assert store._thresholds()["BMS_isolationResistance"] == (5.0, None)
     store.close()
+
+
+def test_cli_trend_ingest_baseline_diff(tmp_path, capsys):
+    import tesla_scan
+    db = str(tmp_path / "cli.sqlite")
+    tesla_scan.main(["trend", "--db", db, "ingest",
+                     os.path.join(FIXTURES, "baseline_0219.csv")])
+    tesla_scan.main(["trend", "--db", db, "baseline", "1"])
+    tesla_scan.main(["trend", "--db", db, "ingest",
+                     os.path.join(FIXTURES, "sample_0219.csv")])
+    tesla_scan.main(["trend", "--db", db, "diff", "2"])
+    out = capsys.readouterr().out
+    assert "BMS_state" in out

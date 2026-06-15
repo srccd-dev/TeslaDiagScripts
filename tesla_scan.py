@@ -9,6 +9,7 @@ from tscan.capture import parse_capture_file, capture_live
 from tscan.faults import active_faults
 from tscan.dump import dump_signals
 from tscan.meaning import tessie_link
+from tscan.trend import TrendStore
 
 REPO = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DBC = os.path.join(REPO, "data", "tesla_models.dbc")
@@ -56,6 +57,33 @@ def cmd_dump(args):
         print()
 
 
+def cmd_trend(args):
+    store = TrendStore(args.db)
+    overrides = _load_overrides(args.descriptions)
+    if args.action == "ingest":
+        cid = store.ingest(Decoder(args.dbc), args.capture, overrides=overrides)
+        print(f"Ingested as capture id {cid}")
+    elif args.action == "baseline":
+        store.set_baseline(args.capture_id)
+        print(f"Baseline set to capture id {args.capture_id}")
+    elif args.action == "diff":
+        d = store.diff(args.capture_id)
+        print(f"NEW FAULTS ({len(d['new_faults'])}):")
+        for f in d["new_faults"]:
+            print(f"  + {f['signal']}")
+        print(f"STATE CHANGES ({len(d['state_changes'])}):")
+        for c in d["state_changes"]:
+            print(f"  ~ {c['signal']}: {c['from']} -> {c['to']}")
+        print(f"DRIFTS ({len(d['drifts'])}):")
+        for dr in d["drifts"]:
+            print(f"  Δ {dr['signal']}: {dr['from']} -> {dr['to']}")
+    elif args.action == "history":
+        for h in store.history(args.signal):
+            print(f"  cap {h['capture_id']} ({h['started_at']}): "
+                  f"{h['v_last']} {h['named_state'] or ''}")
+    store.close()
+
+
 def cmd_capture(args):
     ids = args.ids.split(",") if args.ids else None
     out = capture_live(args.port, args.secs, ids=ids, out_path=args.out)
@@ -85,6 +113,17 @@ def main(argv=None):
     dp.add_argument("--grep", help="case-insensitive regex on signal name")
     dp.add_argument("--dbc", default=DEFAULT_DBC)
     dp.set_defaults(func=cmd_dump)
+
+    tr = sub.add_parser("trend", help="SQLite trend store: ingest/baseline/diff/history")
+    tr.add_argument("--db", default="tesla_trend.sqlite")
+    tr.add_argument("--dbc", default=DEFAULT_DBC)
+    tr.add_argument("--descriptions", default=DEFAULT_OVERRIDES)
+    tr.set_defaults(func=cmd_trend)
+    tract = tr.add_subparsers(dest="action", required=True)
+    p_ing = tract.add_parser("ingest"); p_ing.add_argument("capture")
+    p_base = tract.add_parser("baseline"); p_base.add_argument("capture_id", type=int)
+    p_diff = tract.add_parser("diff"); p_diff.add_argument("capture_id", type=int)
+    p_hist = tract.add_parser("history"); p_hist.add_argument("signal")
 
     args = ap.parse_args(argv)
     args.func(args)

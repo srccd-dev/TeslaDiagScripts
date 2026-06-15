@@ -34,3 +34,15 @@ def test_ingest_creates_rows(decoder, tmp_path):
         "SELECT COUNT(*) FROM faults WHERE capture_id=? AND active=1", (cid,))
     assert cur.fetchone()[0] >= 1   # BMS_state=FAULT
     store.close()
+
+
+def test_baseline_set_and_get(decoder, tmp_path):
+    from tscan.trend import TrendStore
+    store = TrendStore(str(tmp_path / "t.sqlite"))
+    c1 = store.ingest(decoder, _write_fixture(tmp_path, "a.csv", REAL_0219))
+    c2 = store.ingest(decoder, _write_fixture(tmp_path, "b.csv", REAL_0219))
+    store.set_baseline(c1)
+    assert store.baseline_id() == c1
+    store.set_baseline(c2)        # moves baseline; only one at a time
+    assert store.baseline_id() == c2
+    store.close()

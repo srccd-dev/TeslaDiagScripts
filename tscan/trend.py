@@ -86,5 +86,15 @@ class TrendStore:
         self.conn.commit()
         return cid
 
+    def set_baseline(self, capture_id):
+        self.conn.execute("UPDATE captures SET is_baseline=0")
+        self.conn.execute("UPDATE captures SET is_baseline=1 WHERE id=?", (capture_id,))
+        self.conn.commit()
+
+    def baseline_id(self):
+        cur = self.conn.execute("SELECT id FROM captures WHERE is_baseline=1 LIMIT 1")
+        row = cur.fetchone()
+        return row[0] if row else None
+
     def close(self):
         self.conn.close()

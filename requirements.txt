@@ -1,3 +1,5 @@
 cantools>=39
 pyserial>=3.5
 pytest>=8
+# optional: only needed for the PCAN capture backend (capture --pcan)
+python-can>=4

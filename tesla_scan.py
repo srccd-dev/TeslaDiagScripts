@@ -5,7 +5,7 @@ import json
 import os
 
 from tscan.core import Decoder
-from tscan.capture import parse_capture_file, capture_live
+from tscan.capture import parse_capture_file, capture_live, capture_pcan
 from tscan.faults import active_faults
 from tscan.dump import dump_signals
 from tscan.meaning import tessie_link
@@ -86,7 +86,14 @@ def cmd_trend(args):
 
 def cmd_capture(args):
     ids = args.ids.split(",") if args.ids else None
-    out = capture_live(args.port, args.secs, ids=ids, out_path=args.out)
+    if args.pcan:
+        out = capture_pcan(args.secs, channel=args.channel, bitrate=args.bitrate,
+                           ids=ids, out_path=args.out)
+    else:
+        if not args.port:
+            raise SystemExit("--port is required for the STN/ELM serial capture "
+                             "(or pass --pcan for a PEAK PCAN interface)")
+        out = capture_live(args.port, args.secs, ids=ids, out_path=args.out)
     print(f"Capture written to {out}")
 
 
@@ -95,7 +102,11 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     c = sub.add_parser("capture", help="record raw CAN frames to file")
-    c.add_argument("--port", required=True)
+    c.add_argument("--port", help="serial port for STN/ELM adapter, e.g. COM5")
+    c.add_argument("--pcan", action="store_true",
+                   help="use a PEAK PCAN interface (drop-free) instead of STN/ELM")
+    c.add_argument("--channel", default="PCAN_USBBUS1", help="PCAN channel")
+    c.add_argument("--bitrate", type=int, default=500000, help="PCAN bitrate")
     c.add_argument("--secs", type=int, default=60)
     c.add_argument("--ids", help="comma-separated 11-bit hex IDs to pass-filter")
     c.add_argument("--out", help="output capture file path")

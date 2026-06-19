@@ -22,8 +22,11 @@ library. Contributions, corrections, and shared captures are welcome.
 A single CLI, `tesla_scan.py`, with subcommands over a shared `cantools`-backed
 decode core. Implemented and unit-tested (25 tests, no vehicle required):
 
-- **`capture`** — record raw CAN frames to a timestamped, re-decodable log
-  (full-bus, or hardware-filtered to specific IDs on a genuine STN adapter).
+- **`capture`** — record raw CAN frames to a timestamped, re-decodable log.
+  Two backends: a genuine **STN/ELM serial** adapter (`--port`), or a **PEAK
+  PCAN** interface (`--pcan`, via `python-can`) which is hardware-buffered and
+  **drop-free** — so slow/rare frames (`0x219`, alertMatrix) aren't lost the way
+  they are on ELM. Both write the identical capture format.
 - **`faults`** — list active fault/alert codes with plain-language meaning, the
   module reporting them, and a link out to [Tessie's alert page](https://stats.tessie.com/alerts)
   for each code's authoritative description (we link, never scrape).
@@ -50,6 +53,8 @@ pip install -r requirements.txt
 python tesla_scan.py capture --port COM5 --secs 60 --out captures/run1.csv
 # slow/targeted: hardware-filter to specific 11-bit IDs (low frame loss)
 python tesla_scan.py capture --port COM5 --secs 150 --ids 219,021,061 --out captures/iso.csv
+# PEAK PCAN backend (drop-free; needs `pip install python-can` + PCAN-Basic driver)
+python tesla_scan.py capture --pcan --channel PCAN_USBBUS1 --secs 150 --out captures/pcan.csv
 
 # active fault/alert codes from a capture
 python tesla_scan.py faults captures/run1.csv

@@ -143,6 +143,48 @@ def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200)
     return out_path
 
 
+def capture_pcan(seconds, channel="PCAN_USBBUS1", bitrate=500000, ids=None,
+                 out_path=None, meta=None, bus=None, max_frames=None):
+    """Live capture via a PEAK PCAN interface (python-can). Hardware-buffered and
+    drop-free — unlike the STN/ELM path, so slow frames (0x219, alertMatrix) and
+    rare frames aren't lost. Writes the same capture-file format as the rest of
+    the suite, so faults/dump/trend work on PCAN captures unchanged.
+
+    `bus`/`max_frames` are injectable for testing without hardware. In normal use
+    they're left None: a real PCAN bus is created via the installed PCAN-Basic
+    driver, and capture runs for `seconds`."""
+    import time
+    own_bus = bus is None
+    if own_bus:
+        import can  # python-can; talks to the installed PCAN-Basic driver
+        bus = can.Bus(interface="pcan", channel=channel, bitrate=bitrate)
+    meta = dict(meta or {})
+    meta.setdefault("adapter", f"PCAN {channel}")
+    meta.setdefault("protocol", f"CAN-{bitrate}")
+    id_set = set(int(x, 16) for x in ids) if ids else None
+    out_path = out_path or f"capture_pcan_{int(time.time())}.csv"
+    t0, n = time.time(), 0
+    try:
+        with CaptureWriter(out_path, meta) as w:
+            while time.time() - t0 < seconds:
+                msg = bus.recv(timeout=0.5)
+                if msg is None:
+                    if max_frames is not None:   # test/drain: stop when source dry
+                        break
+                    continue
+                if id_set is not None and msg.arbitration_id not in id_set:
+                    continue
+                w.write(int((time.time() - t0) * 1000),
+                        msg.arbitration_id, bytes(msg.data))
+                n += 1
+                if max_frames is not None and n >= max_frames:
+                    break
+    finally:
+        if own_bus:
+            bus.shutdown()
+    return out_path
+
+
 def _parse_monitor_line(ln):
     """Parse an ATH1+ATS1 monitor line 'ID b0 b1 ...' -> (can_id:int, data:bytes)."""
     u = ln.strip().upper()

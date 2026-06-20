@@ -24,6 +24,9 @@ def _load_overrides(path):
         return {}
 
 
+_SEV_ORDER = {"CRITICAL": 0, "WARNING": 1, "STATUS": 2}
+
+
 def cmd_faults(args):
     decoder = Decoder(args.dbc)
     overrides = _load_overrides(args.descriptions)
@@ -32,10 +35,15 @@ def cmd_faults(args):
     if not faults:
         print("No active fault/alert codes in this capture.")
         return
-    print(f"{len(faults)} active code(s):\n")
-    for f in sorted(faults, key=lambda x: (x.module, x.signal)):
-        tag = f.code or f.klass
-        print(f"  [{f.module}]  {tag}  {f.signal}")
+    counts = {}
+    for f in faults:
+        counts[f.severity] = counts.get(f.severity, 0) + 1
+    summary = ", ".join(f"{counts.get(s, 0)} {s}" for s in ("CRITICAL", "WARNING", "STATUS"))
+    print(f"{len(faults)} active code(s) - {summary}:\n")
+    for f in sorted(faults, key=lambda x: (_SEV_ORDER.get(x.severity, 9), x.module, x.signal)):
+        label = f.code or f.klass
+        state = f" {f.state}" if f.state else ""
+        print(f"  [{f.severity}] {f.klass} {label}{state}  {f.signal}  ({f.module})")
         print(f"        meaning : {f.meaning}")
         print(f"        evidence: 0x{f.can_id:03X} = {f.evidence}")
         print(f"        tessie  : {tessie_link(f.signal)}\n")

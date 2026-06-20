@@ -91,3 +91,14 @@ def test_active_faults_coded_severity(decoder):
     faults = active_faults(decoder, [(0, 0x021, bytes([0x40, 0, 0, 0, 0, 0, 0, 0]))])
     f = next(f for f in faults if f.code == "f071")
     assert f.klass == "fault" and f.severity == "CRITICAL"
+
+
+def test_cmd_faults_severity_output(capsys):
+    import os
+    import tesla_scan
+    from tests.conftest import FIXTURES
+    tesla_scan.main(["faults", os.path.join(FIXTURES, "sample_0219.csv")])
+    out = capsys.readouterr().out
+    assert "CRITICAL" in out          # BMS_state=FAULT is CRITICAL
+    assert "BMS_state" in out
+    assert "active code" in out       # summary header present

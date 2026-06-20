@@ -14,6 +14,41 @@ def test_is_fault_value_conservative():
     assert not is_fault_value("STANDBY")
 
 
+from tscan.faults import classify
+
+
+class _Named(str):
+    """str subclass with a .name attribute, mimicking cantools NamedSignalValue."""
+    @property
+    def name(self):
+        return str(self)
+
+
+def test_classify_coded_classes():
+    assert classify("BMS_f071_x", 1).klass == "fault"
+    assert classify("BMS_f071_x", 1).severity == "CRITICAL"
+    assert classify("BMS_w158_x", 1).klass == "warning"
+    assert classify("BMS_w158_x", 1).severity == "WARNING"
+    assert classify("X_a094_y", 1).severity == "WARNING"      # alert -> WARNING
+    assert classify("X_u008_y", 1).severity == "STATUS"
+    assert classify("BMS_f071_x", 0) is None                  # not active
+
+
+def test_classify_selftest_is_state_aware():
+    # THE BUG FIX: PASSED is good, FAILED is the fault
+    assert classify("BMS_d002_x", _Named("PASSED_DTC")) is None
+    assert classify("BMS_d002_x", _Named("NOT_TESTED_DTC")) is None
+    c = classify("BMS_d002_x", _Named("FAILED_DTC"))
+    assert c.klass == "selftest" and c.state == "FAILED_DTC" and c.severity == "CRITICAL"
+
+
+def test_classify_enum_fault_path():
+    assert classify("BMS_state", _Named("FAULT")).severity == "CRITICAL"
+    assert classify("BMS_state", _Named("FAULT")).klass == "state"
+    assert classify("BMS_state", _Named("STANDBY")) is None
+    assert classify("DI_x", _Named("FAULT_SNA")) is None      # SNA excluded
+
+
 def test_state_watchlist_flags_bms_fault(decoder):
     # real captured 0x219 has BMS_state = FAULT
     frames = [(0, 0x219, bytes([0x00, 0x80, 0x7F, 0x00, 0x82, 0x02, 0x00, 0x04]))]

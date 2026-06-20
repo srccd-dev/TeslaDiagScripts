@@ -4,14 +4,10 @@ from dataclasses import dataclass
 from tscan.core import module_for
 from tscan.meaning import describe
 
-_CODE = re.compile(r"_([wfu])(\d{3})_")
-_CLASS = {"w": "warning", "f": "fault", "u": "status"}
-
-# state enums whose listed values count as an active fault
-DEFAULT_STATE_WATCH = {
-    "BMS_state": {"FAULT", "WELD"},
-    "BMS_contactorState": {"WELD", "CLEANING"},
-}
+_CODE = re.compile(r"_([awfud])(\d{3})_")
+_CLASS = {"f": "fault", "w": "warning", "a": "alert", "d": "selftest", "u": "status"}
+_SEVERITY = {"fault": "CRITICAL", "selftest": "CRITICAL", "state": "CRITICAL",
+             "warning": "WARNING", "alert": "WARNING", "status": "STATUS"}
 
 _FAULT_TOKENS = ("FAULT", "FAILED", "WELD", "ERROR")
 
@@ -24,6 +20,41 @@ def is_fault_value(named):
     if "SNA" in s or s.startswith("NO_") or "NOT_" in s:
         return False
     return any(tok in s for tok in _FAULT_TOKENS)
+
+
+@dataclass
+class Classification:
+    code: str
+    klass: str
+    state: object       # str for self-tests, else None
+    severity: str
+
+
+def _nonzero(value):
+    try:
+        return int(value) != 0
+    except (TypeError, ValueError):
+        return False
+
+
+def classify(signal_name, value):
+    """Classify one decoded signal -> Classification if it is an ACTIVE fault, else
+    None. State-aware: self-test PASSED/NOT_TESTED and benign enums are not faults."""
+    named = str(value) if hasattr(value, "name") else None
+    m = _CODE.search(signal_name)
+    if m:
+        klass = _CLASS[m.group(1)]
+        code = f"{m.group(1)}{m.group(2)}"
+        if klass == "selftest":
+            if not (named and "FAILED" in named.upper()):
+                return None
+            return Classification(code, klass, named, _SEVERITY[klass])
+        if not _nonzero(value):
+            return None
+        return Classification(code, klass, None, _SEVERITY[klass])
+    if named is not None and is_fault_value(named):
+        return Classification("", "state", named, _SEVERITY["state"])
+    return None
 
 
 @dataclass

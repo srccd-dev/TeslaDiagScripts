@@ -27,9 +27,12 @@ decode core. Implemented and unit-tested (25 tests, no vehicle required):
   PCAN** interface (`--pcan`, via `python-can`) which is hardware-buffered and
   **drop-free** — so slow/rare frames (`0x219`, alertMatrix) aren't lost the way
   they are on ELM. Both write the identical capture format.
-- **`faults`** — list active fault/alert codes with plain-language meaning, the
-  module reporting them, and a link out to [Tessie's alert page](https://stats.tessie.com/alerts)
-  for each code's authoritative description (we link, never scrape).
+- **`faults`** — classify active fault/alert codes by **class** (`fault`/`warning`/
+  `alert`/`selftest`/`status`) and **severity** (CRITICAL/WARNING/STATUS), **state-aware**
+  (a self-test reading `PASSED` is not flagged; `FAILED` is), with plain-language meaning,
+  module, and a link out to [Tessie's alert page](https://stats.tessie.com/alerts) for each
+  code's authoritative description (we link, never scrape). Surfaces pre-fault `warning`s
+  and failing self-tests as early signals.
 - **`dump`** — decode every signal the DBC knows in a capture, grouped by
   module/ECU (`--module`, `--grep` filters). ~2,000 signals came out of a 45 s
   capture on a 2016 Model X — vs the ~300 typical surface apps show.

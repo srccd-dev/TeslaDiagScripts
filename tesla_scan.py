@@ -41,9 +41,9 @@ def cmd_faults(args):
     summary = ", ".join(f"{counts.get(s, 0)} {s}" for s in ("CRITICAL", "WARNING", "STATUS"))
     print(f"{len(faults)} active code(s) - {summary}:\n")
     for f in sorted(faults, key=lambda x: (_SEV_ORDER.get(x.severity, 9), x.module, x.signal)):
-        label = f.code or f.klass
+        code = f" {f.code}" if f.code else ""   # empty for enum-faults (klass already shown)
         state = f" {f.state}" if f.state else ""
-        print(f"  [{f.severity}] {f.klass} {label}{state}  {f.signal}  ({f.module})")
+        print(f"  [{f.severity}] {f.klass}{code}{state}  {f.signal}  ({f.module})")
         print(f"        meaning : {f.meaning}")
         print(f"        evidence: 0x{f.can_id:03X} = {f.evidence}")
         print(f"        tessie  : {tessie_link(f.signal)}\n")

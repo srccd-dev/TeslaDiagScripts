@@ -13,6 +13,18 @@ DEFAULT_STATE_WATCH = {
     "BMS_contactorState": {"WELD", "CLEANING"},
 }
 
+_FAULT_TOKENS = ("FAULT", "FAILED", "WELD", "ERROR")
+
+
+def is_fault_value(named):
+    """A decoded enum value indicates a fault when it contains a fault token but is
+    not an SNA/negation. Conservative on purpose: FAULT_SNA and NO_FAULT are NOT
+    faults, only e.g. FAULT / FAILED / WELD / SOPT_TEST_FAILED."""
+    s = str(named).upper()
+    if "SNA" in s or s.startswith("NO_") or "NOT_" in s:
+        return False
+    return any(tok in s for tok in _FAULT_TOKENS)
+
 
 @dataclass
 class Fault:

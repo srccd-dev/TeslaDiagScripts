@@ -1,4 +1,17 @@
-from tscan.faults import active_faults
+from tscan.faults import active_faults, is_fault_value
+
+
+def test_is_fault_value_conservative():
+    assert is_fault_value("FAULT")
+    assert is_fault_value("FAILED")
+    assert is_fault_value("WELD")
+    assert is_fault_value("SOPT_TEST_FAILED")
+    # SNA and negations are NOT faults
+    assert not is_fault_value("FAULT_SNA")
+    assert not is_fault_value("NO_FAULT")
+    assert not is_fault_value("NOT_TESTED_DTC")
+    assert not is_fault_value("PASSED_DTC")
+    assert not is_fault_value("STANDBY")
 
 
 def test_state_watchlist_flags_bms_fault(decoder):

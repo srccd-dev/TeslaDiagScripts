@@ -74,3 +74,20 @@ def test_no_faults_when_clean(decoder):
     frames = [(0, 0x219, data)]
     faults = active_faults(decoder, frames)
     assert all(f.signal != "BMS_state" for f in faults)  # state 0 = STANDBY, not a fault
+
+
+def test_active_faults_enriched_fields(decoder):
+    # real captured 0x219: BMS_state = FAULT -> enum-fault, CRITICAL
+    frames = [(0, 0x219, bytes([0x00, 0x80, 0x7F, 0x00, 0x82, 0x02, 0x00, 0x04]))]
+    faults = active_faults(decoder, frames)
+    bms = next(f for f in faults if f.signal == "BMS_state")
+    assert bms.klass == "state"
+    assert bms.severity == "CRITICAL"
+    assert "FAULT" in bms.meaning
+
+
+def test_active_faults_coded_severity(decoder):
+    # alertMatrix2 0x021 byte0 0x40 -> BMS_f071 fault, CRITICAL
+    faults = active_faults(decoder, [(0, 0x021, bytes([0x40, 0, 0, 0, 0, 0, 0, 0]))])
+    f = next(f for f in faults if f.code == "f071")
+    assert f.klass == "fault" and f.severity == "CRITICAL"

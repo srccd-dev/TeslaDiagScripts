@@ -63,6 +63,7 @@ class CaptureWriter:
 
     def write(self, t_ms, can_id, data):
         self.fh.write(f"{t_ms},{can_id:03X},{data.hex().upper()}\n")
+        self.fh.flush()   # durable per frame: a stop/crash never loses the capture
 
     def __exit__(self, *exc):
         if self.fh:

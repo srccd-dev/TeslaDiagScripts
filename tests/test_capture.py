@@ -22,3 +22,14 @@ def test_writer_roundtrip(tmp_path):
     meta, frames = parse_capture_file(str(p))
     assert meta["bus"] == "CAN3"
     assert frames[0][1] == 0x219
+
+
+def test_writer_flushes_each_write(tmp_path):
+    # data must be on disk immediately, BEFORE the context closes — so a stop/
+    # crash/sleep (e.g. killing a drive capture) never loses the captured frames
+    from tscan.capture import CaptureWriter, parse_capture_file
+    p = tmp_path / "f.csv"
+    with CaptureWriter(str(p), meta={"bus": "CAN3"}) as w:
+        w.write(0, 0x219, bytes([1, 2, 3]))
+        _m, frames = parse_capture_file(str(p))   # read mid-context, no close yet
+        assert frames and frames[0][1] == 0x219

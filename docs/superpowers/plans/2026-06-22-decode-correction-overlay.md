@@ -14,6 +14,18 @@
 
 **Spec:** `docs/superpowers/specs/2026-06-22-decode-correction-overlay-design.md`
 
+**Reference sources (development only — NEVER committed; see `.gitignore`):**
+- `D:\Dev\Projects\Tesla-ODB2\PT.dbc` — authoritative S/X powertrain DBC (Amond/SMT).
+  Author/verify overlay definitions against it. e.g. `0x3F8` (BO_ 1016) =
+  `RCCM_THCHvacDuctSensors2` — four duct temps, **not** DCDC faults.
+- `D:\Dev\Projects\Tesla-ODB2\BMS-debug.dbc` — BMS debug/DTC + iso resistance defs
+  (`BMS_rawIsolationResistance`, mux 126, ×20 kOhm). For battery-bus frames reachable
+  only via PCAN; reference for later iso work.
+- talas9 (online) — secondary cross-check.
+
+We **derive our own MIT overlay** from these; we never copy or commit the files. See
+the **boundary gate** in Task 4 before committing `data/overlay.json` publicly.
+
 **Deferred (reserved in schema, implemented when first needed — flagged for user):**
 - `enum_fix` — no first-batch frame needs value-name remapping (lights use `trust:"unknown"` instead).
 - Overlay-level **multiplexing** (`is_muxer`/`mux_id`) — genuine mux already works through the base DBC (`0x322`); no overlay frame needs it yet.
@@ -403,10 +415,14 @@ def test_overlay_batch_kills_dcdc_false_faults(engine):
     assert faults == []                              # was 8 bogus DCDC "faults"
 
 
-def test_overlay_batch_dumps_dcdc_analog_words(engine):
+def test_overlay_batch_3f8_decodes_hvac_duct_temps(engine):
     grouped = dump_signals(engine, [(0, 0x3F8, REAL_3F8)])
-    names = {n for v in grouped.values() for n, _ in v}
-    assert {"DCDC_rawWord0", "DCDC_rawWord1", "DCDC_rawWord2", "DCDC_rawWord3"} <= names
+    flat = {n: v for vals in grouped.values() for n, v in vals}
+    assert "RCCM_LeftVentDuctSnsRaw_DegC" in flat
+    # raw word 0x02FB=763 -> 763*0.1 - 40 = 36.3 degC (plausible duct temp)
+    assert 30 <= flat["RCCM_LeftVentDuctSnsRaw_DegC"] <= 45
+    assert {"RCCM_RightVentDuctSnsRaw_DegC", "RCCM_LeftFloorDuctSnsRaw_DegC",
+            "RCCM_RightFloorDuctSnsRaw_DegC"} <= set(flat)
 
 
 def test_overlay_batch_suppresses_light_frames_from_faults(engine):
@@ -427,16 +443,16 @@ Expected: FAIL — `data/overlay.json` does not exist, so the engine has no entr
   "version": 1,
   "messages": {
     "3F8": {
-      "name": "DCDC_status",
-      "comment": "Community DBC mislabels as DCDC_alertMatrix1 (boolean fault bits). Wire is 4x u16 LE analog (odd bytes pinned 0x02/0x03). Evidence: byte-variance probe of 2026-06-21 drive capture. Raw words pending scale/meaning derivation.",
+      "name": "RCCM_THCHvacDuctSensors2",
+      "comment": "Community DBC mislabels as DCDC_alertMatrix1 (boolean fault bits); the captured bus actually carries cabin-HVAC duct temps. Definition verified against Amond/SMT PT.dbc (BO_ 1016, NOT redistributed) and confirmed by byte-variance probe of the 2026-06-21 capture (4x u16 LE, ~20-50 C). See Task 4 boundary gate before public commit.",
       "length": 8,
       "trust": "analog",
       "replace_signals": true,
       "signals": [
-        {"name": "DCDC_rawWord0", "start": 0,  "length": 16, "endian": "little", "scale": 1, "offset": 0, "unit": ""},
-        {"name": "DCDC_rawWord1", "start": 16, "length": 16, "endian": "little", "scale": 1, "offset": 0, "unit": ""},
-        {"name": "DCDC_rawWord2", "start": 32, "length": 16, "endian": "little", "scale": 1, "offset": 0, "unit": ""},
-        {"name": "DCDC_rawWord3", "start": 48, "length": 16, "endian": "little", "scale": 1, "offset": 0, "unit": ""}
+        {"name": "RCCM_LeftVentDuctSnsRaw_DegC",  "start": 0,  "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"},
+        {"name": "RCCM_RightVentDuctSnsRaw_DegC", "start": 16, "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"},
+        {"name": "RCCM_LeftFloorDuctSnsRaw_DegC", "start": 32, "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"},
+        {"name": "RCCM_RightFloorDuctSnsRaw_DegC","start": 48, "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"}
       ]
     },
     "212": {
@@ -453,16 +469,34 @@ Expected: FAIL — `data/overlay.json` does not exist, so the engine has no entr
 }
 ```
 
+- [ ] **Step 3b: Add the RCCM module label** so `dump` groups the duct temps sensibly
+
+In `tscan/core.py`, add to the `MODULE_PREFIXES` dict (in the thermal area):
+
+```python
+    "RCCM": "Cabin HVAC (RCCM)",
+```
+
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest tests/test_overlay.py -v`
 Expected: PASS (batch regression + earlier overlay tests)
 
+> **⚠ BOUNDARY GATE — do before Step 5.** `data/overlay.json` gets committed to the
+> **public** repo. The `0x3F8` definition's names/scale are *verified against* Amond's
+> PT.dbc (shared for development, not for redistribution). Confirm with the user that
+> Amond is OK with PT.dbc-**derived** definitions (signal names + scale/offset, not the
+> file) shipping in the committed overlay **with attribution**. If **yes** → commit as
+> written. If **no/unsure** → replace `RCCM_*` names with neutral derived names
+> (e.g. `CabinDuctTempLeftVent_DegC`), keep `scale 0.1 / offset -40` (justified by the
+> empirical ~20–50 °C range), and note "independently derived" in the comment. **Do not
+> commit until this is resolved.**
+
 - [ ] **Step 5: Commit**
 
 ```bash
-git add data/overlay.json tests/conftest.py tests/test_overlay.py
-git commit -m "feat: first overlay batch (0x3F8 analog, 0x212/0x232 length+trust)
+git add data/overlay.json tscan/core.py tests/conftest.py tests/test_overlay.py
+git commit -m "feat: first overlay batch (0x3F8 HVAC duct temps, 0x212/0x232 length+trust)
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
@@ -720,8 +754,8 @@ In `README.md`, under the `dump`/`faults` descriptions, add a short paragraph (p
 ```markdown
 - **decode overlay** — `data/overlay.json` is a hand-authored, MIT-licensed set of
   per-message corrections over the community DBC: it fixes mislabeled frames (e.g.
-  `0x3F8`, which the DBC calls `DCDC_alertMatrix1` but is actually 4×16-bit analog),
-  declares true wire lengths for short frames (`0x212`/`0x232`), and tags each frame's
+  `0x3F8`, which the DBC calls `DCDC_alertMatrix1` but is actually cabin-HVAC duct
+  temperatures), declares true wire lengths for short frames (`0x212`/`0x232`), and tags each frame's
   `trust` (`faults`/`analog`/`unknown`) so `faults` only flags trustworthy frames.
   This removes the bulk of the old false positives; coverage grows one evidence-backed
   entry at a time. Characterize a new frame with `python tools/profile_frame.py
@@ -745,5 +779,5 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - `python -m pytest -q` passes (overlay loader, DecodeEngine, trust gate, batch regression, CLI, profile tool, plus all pre-existing tests).
 - `python tesla_scan.py faults <drive capture>` no longer reports the `DCDC_w00x` faults or the all-lights `FAULT` block.
-- `python tesla_scan.py dump <drive capture> --grep rawWord` shows `DCDC_rawWord0..3`.
+- `python tesla_scan.py dump <drive capture> --grep DuctSns` shows the four RCCM duct temps.
 - `data/overlay.json` documents each entry's evidence; `tools/profile_frame.py` reproduces the characterization that justified it.

@@ -9,6 +9,21 @@ File format (CSV):
 import re
 
 
+class CaptureEmpty(RuntimeError):
+    """Raised when a live capture receives no frames within the liveness window —
+    so a dead adapter/link aborts loudly instead of silently 'running' for a whole
+    drive."""
+
+
+def _assert_live(n_frames, liveness_secs):
+    """Abort if no frames have arrived once the liveness window has elapsed."""
+    if n_frames == 0:
+        raise CaptureEmpty(
+            f"No CAN frames received in {liveness_secs:.0f}s - the link looks dead "
+            f"(adapter off / wrong port / Bluetooth dropped). Aborting so a drive "
+            f"isn't wasted. Reset the adapter, or use --pcan (wired) for moving captures.")
+
+
 def parse_capture_file(path):
     """Return (meta: dict, frames: list[(t_ms:int, can_id:int, data:bytes)])."""
     meta, frames = {}, []
@@ -70,7 +85,8 @@ class CaptureWriter:
             self.fh.close()
 
 
-def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200):
+def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200,
+                 liveness_secs=5):
     """Live serial capture using the proven STN/ELM monitor. Ports the logic from
     tesla_iso_capture.py. Writes frames to out_path. Returns out_path.
     Requires hardware; not unit-tested."""
@@ -121,31 +137,40 @@ def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200)
     out_path = out_path or f"capture_{int(time.time())}.csv"
     s.reset_input_buffer()
     s.write((start + "\r").encode())
-    t0, part = time.time(), ""
-    with CaptureWriter(out_path, meta) as w:
+    t0, part, n, live_checked = time.time(), "", 0, False
+    try:
+        with CaptureWriter(out_path, meta) as w:
+            try:
+                while time.time() - t0 < seconds:
+                    navail = s.in_waiting
+                    if navail:
+                        part += s.read(navail).decode(errors="replace")
+                        lines = part.split("\r")
+                        part = lines.pop()
+                        for ln in lines:
+                            fr = _parse_monitor_line(ln)
+                            if fr:
+                                w.write(int((time.time() - t0) * 1000), fr[0], fr[1])
+                                n += 1
+                    else:
+                        time.sleep(0.02)
+                    if not live_checked and (time.time() - t0) >= liveness_secs:
+                        live_checked = True
+                        _assert_live(n, liveness_secs)   # abort loudly on a dead link
+            except KeyboardInterrupt:
+                pass
+    finally:
         try:
-            while time.time() - t0 < seconds:
-                n = s.in_waiting
-                if n:
-                    part += s.read(n).decode(errors="replace")
-                    lines = part.split("\r")
-                    part = lines.pop()
-                    for ln in lines:
-                        fr = _parse_monitor_line(ln)
-                        if fr:
-                            w.write(int((time.time() - t0) * 1000), fr[0], fr[1])
-                else:
-                    time.sleep(0.02)
-        except KeyboardInterrupt:
+            s.write(b"\r")
+            time.sleep(0.2)
+            s.close()
+        except Exception:
             pass
-    s.write(b"\r")
-    time.sleep(0.2)
-    s.close()
     return out_path
 
 
 def capture_pcan(seconds, channel="PCAN_USBBUS1", bitrate=500000, ids=None,
-                 out_path=None, meta=None, bus=None, max_frames=None):
+                 out_path=None, meta=None, bus=None, max_frames=None, liveness_secs=5):
     """Live capture via a PEAK PCAN interface (python-can). Hardware-buffered and
     drop-free — unlike the STN/ELM path, so slow frames (0x219, alertMatrix) and
     rare frames aren't lost. Writes the same capture-file format as the rest of
@@ -164,21 +189,21 @@ def capture_pcan(seconds, channel="PCAN_USBBUS1", bitrate=500000, ids=None,
     meta.setdefault("protocol", f"CAN-{bitrate}")
     id_set = set(int(x, 16) for x in ids) if ids else None
     out_path = out_path or f"capture_pcan_{int(time.time())}.csv"
-    t0, n = time.time(), 0
+    t0, n, live_checked = time.time(), 0, False
     try:
         with CaptureWriter(out_path, meta) as w:
             while time.time() - t0 < seconds:
                 msg = bus.recv(timeout=0.5)
-                if msg is None:
-                    if max_frames is not None:   # test/drain: stop when source dry
+                if msg is not None and (id_set is None or msg.arbitration_id in id_set):
+                    w.write(int((time.time() - t0) * 1000),
+                            msg.arbitration_id, bytes(msg.data))
+                    n += 1
+                    if max_frames is not None and n >= max_frames:
                         break
-                    continue
-                if id_set is not None and msg.arbitration_id not in id_set:
-                    continue
-                w.write(int((time.time() - t0) * 1000),
-                        msg.arbitration_id, bytes(msg.data))
-                n += 1
-                if max_frames is not None and n >= max_frames:
+                if not live_checked and (time.time() - t0) >= liveness_secs:
+                    live_checked = True
+                    _assert_live(n, liveness_secs)   # abort loudly on a dead link
+                if msg is None and max_frames is not None:   # test/drain: source dry
                     break
     finally:
         if own_bus:

@@ -97,9 +97,9 @@ def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200,
     last = None
     for _ in range(6):
         try:
-            # write_timeout: a wedged BT link can open but block writes forever;
-            # cap it so we fail fast (raises) instead of hanging a whole drive.
-            s = serial.Serial(port, baud, timeout=1.0, write_timeout=2.0)
+            # write_timeout is a generous net (a truly-wedged link fails instead of
+            # hanging a whole drive) but loose enough not to kill a slow-but-fine BT write.
+            s = serial.Serial(port, baud, timeout=1.0, write_timeout=5.0)
             break
         except Exception as e:  # transient BT semaphore timeouts -> retry
             last = e
@@ -108,6 +108,8 @@ def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200,
         raise CaptureEmpty(
             f"Could not open {port} after retries ({last}). Reset the OBDLink "
             f"(unplug/replug) and re-pair Bluetooth, then retry — or use --pcan.")
+    time.sleep(0.5)   # let the BT port settle before writing — v1 had this; its
+    #                   absence made the first write hit a not-ready port and hang.
 
     def cmd(c, read_for=1.2):
         s.reset_input_buffer()

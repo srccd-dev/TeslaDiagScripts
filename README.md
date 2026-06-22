@@ -26,7 +26,12 @@ decode core. Implemented and unit-tested (25 tests, no vehicle required):
   Two backends: a genuine **STN/ELM serial** adapter (`--port`), or a **PEAK
   PCAN** interface (`--pcan`, via `python-can`) which is hardware-buffered and
   **drop-free** — so slow/rare frames (`0x219`, alertMatrix) aren't lost the way
-  they are on ELM. Both write the identical capture format.
+  they are on ELM. Both write the identical capture format. A **liveness check
+  aborts immediately** if no frames arrive (a dead link never silently wastes a
+  drive), and writes are **flushed per frame** (a stop/crash/sleep loses nothing).
+  **For moving/drive captures, prefer `--pcan`** — Bluetooth SPP is unreliable in
+  a car (it can open but deliver nothing). Keep the laptop awake; don't run a
+  separate probe right before the capture.
 - **`faults`** — classify active fault/alert codes by **class** (`fault`/`warning`/
   `alert`/`selftest`/`status`) and **severity** (CRITICAL/WARNING/STATUS), **state-aware**
   (a self-test reading `PASSED` is not flagged; `FAILED` is), with plain-language meaning,

@@ -97,13 +97,17 @@ def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200,
     last = None
     for _ in range(6):
         try:
-            s = serial.Serial(port, baud, timeout=1.0)
+            # write_timeout: a wedged BT link can open but block writes forever;
+            # cap it so we fail fast (raises) instead of hanging a whole drive.
+            s = serial.Serial(port, baud, timeout=1.0, write_timeout=2.0)
             break
         except Exception as e:  # transient BT semaphore timeouts -> retry
             last = e
             time.sleep(0.9)
     if s is None:
-        raise last
+        raise CaptureEmpty(
+            f"Could not open {port} after retries ({last}). Reset the OBDLink "
+            f"(unplug/replug) and re-pair Bluetooth, then retry — or use --pcan.")
 
     def cmd(c, read_for=1.2):
         s.reset_input_buffer()
@@ -120,25 +124,25 @@ def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200,
                 time.sleep(0.03)
         return buf.decode(errors="replace").replace("\r", " ").replace(">", "").strip()
 
-    for c in ("ATWS", "ATE0", "ATL0", "ATS1", "ATH1", "ATCAF0", "ATSP6"):
-        cmd(c)
-    adapter = cmd("STI")[:40]
-    meta = dict(meta or {})
-    meta.setdefault("adapter", adapter)
-    meta.setdefault("port", port)
-
-    start = "ATMA"
-    if ids:
-        cmd("STFAC")
-        for cid in ids:
-            cmd(f"STFAP {cid},7FF")
-        start = "STM"
-
     out_path = out_path or f"capture_{int(time.time())}.csv"
-    s.reset_input_buffer()
-    s.write((start + "\r").encode())
-    t0, part, n, live_checked = time.time(), "", 0, False
     try:
+        for c in ("ATWS", "ATE0", "ATL0", "ATS1", "ATH1", "ATCAF0", "ATSP6"):
+            cmd(c)
+        adapter = cmd("STI")[:40]
+        meta = dict(meta or {})
+        meta.setdefault("adapter", adapter)
+        meta.setdefault("port", port)
+
+        start = "ATMA"
+        if ids:
+            cmd("STFAC")
+            for cid in ids:
+                cmd(f"STFAP {cid},7FF")
+            start = "STM"
+
+        s.reset_input_buffer()
+        s.write((start + "\r").encode())
+        t0, part, n, live_checked = time.time(), "", 0, False
         with CaptureWriter(out_path, meta) as w:
             try:
                 while time.time() - t0 < seconds:
@@ -159,6 +163,11 @@ def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200,
                         _assert_live(n, liveness_secs)   # abort loudly on a dead link
             except KeyboardInterrupt:
                 pass
+    except serial.SerialException as e:
+        # wedged BT link (write timed out / port error) — fail fast and clearly
+        raise CaptureEmpty(
+            f"Adapter stopped responding ({e}). The Bluetooth link is likely wedged "
+            f"- reset the OBDLink (unplug/replug) and re-pair, then retry, or use --pcan.")
     finally:
         try:
             s.write(b"\r")

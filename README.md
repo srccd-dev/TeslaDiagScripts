@@ -22,7 +22,7 @@ Contributions, corrections, and shared captures are welcome.
 ## Status
 
 A single CLI, `tesla_scan.py`, with subcommands over a shared `cantools`-backed
-decode core. Implemented and unit-tested (25 tests, no vehicle required):
+decode core. Implemented and unit-tested (51 tests, no vehicle required):
 
 - **`capture`** — record raw CAN frames to a timestamped, re-decodable log.
   Two backends: a genuine **STN/ELM serial** adapter (`--port`), or a **PEAK

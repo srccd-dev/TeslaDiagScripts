@@ -86,6 +86,8 @@ class DecodeEngine:
             data = data[:length]      # ignore padding beyond the true wire length
         if e and e.get("signals") and e.get("replace_signals"):
             return self._overlay_decode(can_id, data)
+        # base Decoder decodes with allow_truncated=True, which drops any signal
+        # extending past the received bytes — the upper half of the length-guard.
         dec = self.base.decode(can_id, data)
         if e and e.get("signals"):    # merge overlay signals onto the base result
             merged = self._overlay_decode(can_id, data)

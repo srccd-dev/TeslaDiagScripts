@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "messages": {
+    "3F8": {
+      "name": "RCCM_THCHvacDuctSensors2",
+      "comment": "Community DBC mislabels as DCDC_alertMatrix1 (boolean fault bits); the captured bus actually carries cabin-HVAC duct temps. Definition verified against Amond/SMT PT.dbc (BO_ 1016, NOT redistributed) and confirmed by byte-variance probe of the 2026-06-21 capture (4x u16 LE, ~20-50 C). See Task 4 boundary gate before public commit.",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {"name": "RCCM_LeftVentDuctSnsRaw_DegC",  "start": 0,  "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"},
+        {"name": "RCCM_RightVentDuctSnsRaw_DegC", "start": 16, "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"},
+        {"name": "RCCM_LeftFloorDuctSnsRaw_DegC", "start": 32, "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"},
+        {"name": "RCCM_RightFloorDuctSnsRaw_DegC","start": 48, "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"}
+      ]
+    },
+    "212": {
+      "length": 5,
+      "trust": "unknown",
+      "comment": "BCFRONT_lightStatus: wire is 5B not 8B (all 3912 frames in 2026-06-21 capture). DBC 8B light enums decode unreliable (byte3=FF -> spurious FAULT). Suppress from faults until characterized."
+    },
+    "232": {
+      "length": 4,
+      "trust": "unknown",
+      "comment": "BCREAR_lightStatus: wire is 4B not 8B (all 3905 frames). Same issue as 0x212."
+    }
+  }
+}

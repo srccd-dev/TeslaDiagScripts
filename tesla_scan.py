@@ -10,10 +10,12 @@ from tscan.faults import active_faults
 from tscan.dump import dump_signals
 from tscan.meaning import tessie_link
 from tscan.trend import TrendStore
+from tscan.overlay import load_overlay, DecodeEngine
 
 REPO = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DBC = os.path.join(REPO, "data", "tesla_models.dbc")
 DEFAULT_OVERRIDES = os.path.join(REPO, "data", "descriptions.json")
+DEFAULT_OVERLAY = os.path.join(REPO, "data", "overlay.json")
 
 
 def _load_overrides(path):
@@ -28,10 +30,10 @@ _SEV_ORDER = {"CRITICAL": 0, "WARNING": 1, "STATUS": 2}
 
 
 def cmd_faults(args):
-    decoder = Decoder(args.dbc)
+    engine = DecodeEngine(Decoder(args.dbc), load_overlay(args.overlay))
     overrides = _load_overrides(args.descriptions)
     _meta, frames = parse_capture_file(args.capture)
-    faults = active_faults(decoder, frames, overrides=overrides)
+    faults = active_faults(engine, frames, overrides=overrides)
     if not faults:
         print("No active fault/alert codes in this capture.")
         return
@@ -50,9 +52,9 @@ def cmd_faults(args):
 
 
 def cmd_dump(args):
-    decoder = Decoder(args.dbc)
+    engine = DecodeEngine(Decoder(args.dbc), load_overlay(args.overlay))
     _meta, frames = parse_capture_file(args.capture)
-    grouped = dump_signals(decoder, frames, module=args.module, grep=args.grep)
+    grouped = dump_signals(engine, frames, module=args.module, grep=args.grep)
     if not grouped:
         print("No signals matched.")
         return
@@ -127,6 +129,7 @@ def main(argv=None):
     f.add_argument("capture", help="capture file path")
     f.add_argument("--dbc", default=DEFAULT_DBC)
     f.add_argument("--descriptions", default=DEFAULT_OVERRIDES)
+    f.add_argument("--overlay", default=DEFAULT_OVERLAY)
     f.set_defaults(func=cmd_faults)
 
     dp = sub.add_parser("dump", help="decode every signal in a capture, by module")
@@ -134,6 +137,7 @@ def main(argv=None):
     dp.add_argument("--module", help="case-insensitive module label filter")
     dp.add_argument("--grep", help="case-insensitive regex on signal name")
     dp.add_argument("--dbc", default=DEFAULT_DBC)
+    dp.add_argument("--overlay", default=DEFAULT_OVERLAY)
     dp.set_defaults(func=cmd_dump)
 
     tr = sub.add_parser("trend", help="SQLite trend store: ingest/baseline/diff/history")

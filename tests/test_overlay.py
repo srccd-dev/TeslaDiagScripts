@@ -35,3 +35,46 @@ def test_load_overlay_missing_file_is_empty(tmp_path):
     ov = load_overlay(str(tmp_path / "nope.json"))
     assert ov.entry(0x219) is None
     assert ov.trust(0x219) == "faults"
+
+
+import os
+from tscan.core import Decoder
+from tscan.overlay import DecodeEngine
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DBC = os.path.join(REPO, "data", "tesla_models.dbc")
+
+
+def _engine_with(tmp_path, messages):
+    import json
+    p = tmp_path / "overlay.json"
+    p.write_text(json.dumps({"version": 1, "messages": messages}), encoding="utf-8")
+    return DecodeEngine(Decoder(DBC), load_overlay(str(p)))
+
+
+def test_engine_replace_signals_overrides_dbc(tmp_path):
+    eng = _engine_with(tmp_path, {
+        "3F8": {"length": 8, "trust": "analog", "replace_signals": True,
+                "signals": [{"name": "DCDC_rawWord0", "start": 0, "length": 16,
+                             "endian": "little"}]},
+    })
+    dec = eng.decode(0x3F8, bytes([0xFB, 0x02, 0, 0, 0, 0, 0, 0]))
+    assert dec == {"DCDC_rawWord0": 0x02FB}        # DBC's fake fault bits are gone
+    assert eng.trust(0x3F8) == "analog"
+
+
+def test_engine_truncates_padding_to_true_length(tmp_path):
+    # overlay says true length 5; a padded 8-byte frame must not read bytes 5-7
+    eng = _engine_with(tmp_path, {"212": {"length": 5, "trust": "unknown"}})
+    full = eng.decode(0x212, bytes([0xD8, 0x09, 0x12, 0x1E, 0x00, 0xFF, 0xFF, 0xFF]))
+    short = eng.decode(0x212, bytes([0xD8, 0x09, 0x12, 0x1E, 0x00]))
+    assert full == short                            # padding ignored
+    assert eng.trust(0x212) == "unknown"
+
+
+def test_engine_falls_through_to_dbc_for_untouched_ids(tmp_path):
+    eng = _engine_with(tmp_path, {})
+    real_0219 = bytes([0x00, 0x80, 0x7F, 0x00, 0x82, 0x02, 0x00, 0x04])
+    dec = eng.decode(0x219, real_0219)
+    assert "BMS_isolationResistance" in dec
+    assert eng.trust(0x219) == "faults"

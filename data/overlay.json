@@ -3,7 +3,7 @@
   "messages": {
     "3F8": {
       "name": "RCCM_THCHvacDuctSensors2",
-      "comment": "Community DBC mislabels as DCDC_alertMatrix1 (boolean fault bits); the captured bus actually carries cabin-HVAC duct temps. Definition verified against Amond/SMT PT.dbc (BO_ 1016, NOT redistributed) and confirmed by byte-variance probe of the 2026-06-21 capture (4x u16 LE, ~20-50 C). See Task 4 boundary gate before public commit.",
+      "comment": "Community DBC mislabels as DCDC_alertMatrix1 (boolean fault bits); the captured bus actually carries cabin-HVAC duct temps. Definition verified against Amond/SMT PT.dbc (BO_ 1016, NOT redistributed) and confirmed by byte-variance probe of the 2026-06-21 capture (4x u16 LE, ~20-50 C).",
       "length": 8,
       "trust": "analog",
       "replace_signals": true,

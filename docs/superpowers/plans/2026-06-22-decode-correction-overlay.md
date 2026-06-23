@@ -482,15 +482,10 @@ In `tscan/core.py`, add to the `MODULE_PREFIXES` dict (in the thermal area):
 Run: `python -m pytest tests/test_overlay.py -v`
 Expected: PASS (batch regression + earlier overlay tests)
 
-> **⚠ BOUNDARY GATE — do before Step 5.** `data/overlay.json` gets committed to the
-> **public** repo. The `0x3F8` definition's names/scale are *verified against* Amond's
-> PT.dbc (shared for development, not for redistribution). Confirm with the user that
-> Amond is OK with PT.dbc-**derived** definitions (signal names + scale/offset, not the
-> file) shipping in the committed overlay **with attribution**. If **yes** → commit as
-> written. If **no/unsure** → replace `RCCM_*` names with neutral derived names
-> (e.g. `CabinDuctTempLeftVent_DegC`), keep `scale 0.1 / offset -40` (justified by the
-> empirical ~20–50 °C range), and note "independently derived" in the comment. **Do not
-> commit until this is resolved.**
+> **✅ BOUNDARY GATE — RESOLVED 2026-06-22.** Amond approved shipping PT.dbc-**derived**
+> definitions (signal names + scale/offset, **not** the file) in the committed overlay
+> **with attribution to him / ScanMyTesla**. → Commit the `RCCM_*` definitions as written.
+> Ensure the overlay `comment` and the README (Task 7) credit Amond/SMT.
 
 - [ ] **Step 5: Commit**
 
@@ -760,9 +755,13 @@ In `README.md`, under the `dump`/`faults` descriptions, add a short paragraph (p
   This removes the bulk of the old false positives; coverage grows one evidence-backed
   entry at a time. Characterize a new frame with `python tools/profile_frame.py
   <capture.csv> <hexid>`.
+
+  Corrected definitions (e.g. `0x3F8` cabin-HVAC duct temps) are derived with reference
+  to the S/X powertrain DBC shared by **Amond (ScanMyTesla)**, used with permission and
+  attribution; the source files themselves are not redistributed.
 ```
 
-Also update the "Known limitations" `faults over-reports` bullet to note the overlay now suppresses the analog/short-frame offenders.
+Also update the "Known limitations" `faults over-reports` bullet to note the overlay now suppresses the analog/short-frame offenders. Add an acknowledgement to Amond / ScanMyTesla in the README's existing community-credits paragraph.
 
 - [ ] **Step 3: Commit**
 

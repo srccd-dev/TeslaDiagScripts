@@ -106,3 +106,31 @@ def test_overlay_batch_suppresses_light_frames_from_faults(engine):
     frames = [(0, 0x212, bytes([0xD8, 0x09, 0x12, 0xFF, 0x00])),
               (0, 0x232, bytes([0x6A, 0x27, 0xE9, 0x9C]))]
     assert active_faults(engine, frames) == []       # was many bogus light "FAULTs"
+
+
+# --- Batch 2: 12 frames the community DBC mislabels as fault/alert matrices,
+# corrected from PT.dbc (Amond/SMT) to their real analog identities ---
+BATCH2 = [0x305, 0x378, 0x267, 0x368, 0x5D8, 0x391, 0x5B8, 0x328, 0x202, 0x392,
+          0x358, 0x145]
+
+
+def test_batch2_odometer_decodes(engine):
+    # 0x5D8 is the odometer (MCU_odometerStatus), not GTW_faultMatrix4.
+    dec = engine.decode(0x5D8, bytes.fromhex("58B33F07"))   # u32 LE * 0.001 mi
+    assert abs(dec["MCU_odometer"] - 121615.192) < 0.01      # 0x073FB358 * 0.001
+
+
+def test_batch2_bms_drive_limits_decode(engine):
+    # 0x202 is BMS_driveLimits (bus V + current limits), not BCFDM_status.
+    # minBusVoltage = bytes[0:2] LE 0x0161 = 353 * 0.01 = 3.53 V
+    dec = engine.decode(0x202, bytes.fromhex("61016E9D00000000"))
+    assert abs(dec["BMS_minBusVoltage"] - 3.53) < 1e-9       # 0x0161 * 0.01
+    assert "BMS_maxChargeCurrent" in dec and "BMS_maxDischargeCurrent" in dec
+
+
+def test_batch2_frames_all_analog_and_suppressed(engine):
+    # every batch-2 frame is trust:analog -> never classified as a fault
+    for cid in BATCH2:
+        assert engine.trust(cid) == "analog"
+    frames = [(0, cid, bytes(range(8))) for cid in BATCH2]
+    assert active_faults(engine, frames) == []

@@ -8,10 +8,42 @@
       "trust": "analog",
       "replace_signals": true,
       "signals": [
-        {"name": "RCCM_LeftVentDuctSnsRaw_DegC",  "start": 0,  "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"},
-        {"name": "RCCM_RightVentDuctSnsRaw_DegC", "start": 16, "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"},
-        {"name": "RCCM_LeftFloorDuctSnsRaw_DegC", "start": 32, "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"},
-        {"name": "RCCM_RightFloorDuctSnsRaw_DegC","start": 48, "length": 16, "endian": "little", "scale": 0.1, "offset": -40, "unit": "degC"}
+        {
+          "name": "RCCM_LeftVentDuctSnsRaw_DegC",
+          "start": 0,
+          "length": 16,
+          "endian": "little",
+          "scale": 0.1,
+          "offset": -40,
+          "unit": "degC"
+        },
+        {
+          "name": "RCCM_RightVentDuctSnsRaw_DegC",
+          "start": 16,
+          "length": 16,
+          "endian": "little",
+          "scale": 0.1,
+          "offset": -40,
+          "unit": "degC"
+        },
+        {
+          "name": "RCCM_LeftFloorDuctSnsRaw_DegC",
+          "start": 32,
+          "length": 16,
+          "endian": "little",
+          "scale": 0.1,
+          "offset": -40,
+          "unit": "degC"
+        },
+        {
+          "name": "RCCM_RightFloorDuctSnsRaw_DegC",
+          "start": 48,
+          "length": 16,
+          "endian": "little",
+          "scale": 0.1,
+          "offset": -40,
+          "unit": "degC"
+        }
       ]
     },
     "212": {
@@ -23,6 +55,1248 @@
       "length": 4,
       "trust": "unknown",
       "comment": "BCREAR_lightStatus: wire is 4B not 8B (all 3905 frames). Same issue as 0x212."
+    },
+    "305": {
+      "name": "DIS_temperature",
+      "comment": "Community DBC mislabels 0x305 as BCFPM_warningMatrix1 (bogus fault bits); on the gateway bus it is DIS_temperature. Definition derived from Amond/SMT PT.dbc (BO_ 773, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "DIS_pcbT",
+          "start": 0,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": -40,
+          "unit": "DegC"
+        },
+        {
+          "name": "DIS_inverterT",
+          "start": 8,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": -40,
+          "unit": "DegC"
+        },
+        {
+          "name": "DIS_statorT",
+          "start": 16,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": -40,
+          "unit": "DegC"
+        },
+        {
+          "name": "DIS_dcCapT",
+          "start": 24,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": -40,
+          "unit": "DegC"
+        },
+        {
+          "name": "DIS_heatsinkT",
+          "start": 32,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": -40,
+          "unit": "DegC"
+        },
+        {
+          "name": "DIS_inletT",
+          "start": 40,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": -40,
+          "unit": "DegC"
+        },
+        {
+          "name": "DIS_inverterTpct",
+          "start": 48,
+          "length": 8,
+          "endian": "little",
+          "scale": 0.4,
+          "offset": 0,
+          "unit": "%"
+        },
+        {
+          "name": "DIS_statorTpct",
+          "start": 56,
+          "length": 8,
+          "endian": "little",
+          "scale": 0.4,
+          "offset": 0,
+          "unit": "%"
+        }
+      ]
+    },
+    "378": {
+      "name": "GTW_ctrImpedance",
+      "comment": "Community DBC mislabels 0x378 as PM_alertMatrix2 (bogus fault bits); on the gateway bus it is GTW_ctrImpedance. Definition derived from Amond/SMT PT.dbc (BO_ 888, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "GTW_posImpedance",
+          "start": 0,
+          "length": 16,
+          "endian": "little",
+          "scale": 0.3814697265625,
+          "offset": 0,
+          "unit": "uOhms",
+          "signed": true
+        },
+        {
+          "name": "GTW_negImpedance",
+          "start": 16,
+          "length": 16,
+          "endian": "little",
+          "scale": 0.3814697265625,
+          "offset": 0,
+          "unit": "uOhms",
+          "signed": true
+        },
+        {
+          "name": "GTW_posConfidence",
+          "start": 32,
+          "length": 16,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": "",
+          "signed": true
+        },
+        {
+          "name": "GTW_negConfidence",
+          "start": 48,
+          "length": 16,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": "",
+          "signed": true
+        }
+      ]
+    },
+    "267": {
+      "name": "DI_vehicleEstimates",
+      "comment": "Community DBC mislabels 0x267 as TAS_warningMatrix4 (bogus fault bits); on the gateway bus it is DI_vehicleEstimates. Definition derived from Amond/SMT PT.dbc (BO_ 615, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "DI_mass",
+          "start": 0,
+          "length": 10,
+          "endian": "little",
+          "scale": 5,
+          "offset": 1900,
+          "unit": "kg"
+        },
+        {
+          "name": "DI_tireFitment",
+          "start": 10,
+          "length": 2,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DI_trailerDetected",
+          "start": 12,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DI_vehicleEstimatesCounter",
+          "start": 13,
+          "length": 3,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DI_tireCrr",
+          "start": 16,
+          "length": 8,
+          "endian": "little",
+          "scale": 5e-05,
+          "offset": 0.005,
+          "unit": "N/N"
+        },
+        {
+          "name": "DI_aeroCdA",
+          "start": 24,
+          "length": 8,
+          "endian": "little",
+          "scale": 0.005,
+          "offset": 0.5,
+          "unit": "m^2"
+        },
+        {
+          "name": "DI_massConfidence",
+          "start": 32,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DI_gradeEst",
+          "start": 33,
+          "length": 7,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": "%",
+          "signed": true
+        },
+        {
+          "name": "DI_vehicleEstimatesChecksum",
+          "start": 40,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DI_gradeEstInternal",
+          "start": 48,
+          "length": 7,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": "%",
+          "signed": true
+        },
+        {
+          "name": "DI_steerCenter",
+          "start": 56,
+          "length": 8,
+          "endian": "little",
+          "scale": 0.2,
+          "offset": 0,
+          "unit": "deg",
+          "signed": true
+        }
+      ]
+    },
+    "368": {
+      "name": "GTW_carConfig",
+      "comment": "Community DBC mislabels 0x368 as BCFDM_warningMatrix1 (bogus fault bits); on the gateway bus it is GTW_carConfig. Definition derived from Amond/SMT PT.dbc (BO_ 872, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "GTW_HVJB16APerPhaseOK",
+          "start": 0,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_fourWheelDrive",
+          "start": 7,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_ionizerType",
+          "start": 1,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_showcar",
+          "start": 5,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_bodyControlsType",
+          "start": 4,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_tireType",
+          "start": 3,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_chargerType",
+          "start": 15,
+          "length": 3,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_fastChargeAllowed",
+          "start": 12,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_performanceConfig",
+          "start": 10,
+          "length": 3,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_packConfig",
+          "start": 16,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_roofColor",
+          "start": 29,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_autopilot",
+          "start": 27,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_fastChargeInstalled",
+          "start": 25,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_epasType",
+          "start": 39,
+          "length": 3,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_diFirmwareType",
+          "start": 47,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_rearDriveUnitType",
+          "start": 46,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_rhd",
+          "start": 42,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_performanceLock",
+          "start": 44,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_otherFastChargeAllowed",
+          "start": 43,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_freeSlaveCharger",
+          "start": 45,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_chassisType",
+          "start": 41,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_rearFacingSeats",
+          "start": 55,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_pumpSetType",
+          "start": 53,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_intrusionTiltInstalled",
+          "start": 52,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_performanceAddOn",
+          "start": 50,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_standbySupplyRequired",
+          "start": 48,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_supportWakeupMinutes",
+          "start": 63,
+          "length": 8,
+          "endian": "big",
+          "scale": 10,
+          "offset": 0,
+          "unit": "min"
+        }
+      ]
+    },
+    "5D8": {
+      "name": "MCU_odometerStatus",
+      "comment": "Community DBC mislabels 0x5D8 as GTW_faultMatrix4 (bogus fault bits); on the gateway bus it is MCU_odometerStatus. Definition derived from Amond/SMT PT.dbc (BO_ 1496, used with permission + attribution, file not redistributed).",
+      "length": 4,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "MCU_odometer",
+          "start": 0,
+          "length": 32,
+          "endian": "little",
+          "scale": 0.001,
+          "offset": 0,
+          "unit": "mi"
+        }
+      ]
+    },
+    "391": {
+      "name": "DAS_status",
+      "comment": "Community DBC mislabels 0x391 as EPAS3S_dtcMatrix (bogus fault bits); on the gateway bus it is DAS_status. Definition derived from Amond/SMT PT.dbc (BO_ 913, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "DAS_autopilotState",
+          "start": 0,
+          "length": 4,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_blindSpotRearLeft",
+          "start": 4,
+          "length": 2,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_blindSpotRearRight",
+          "start": 6,
+          "length": 2,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_fusedSpeedLimit",
+          "start": 8,
+          "length": 5,
+          "endian": "little",
+          "scale": 5,
+          "offset": 0,
+          "unit": "kph/mph"
+        },
+        {
+          "name": "DAS_suppressSpeedWarning",
+          "start": 13,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_summonObstacle",
+          "start": 14,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_summonClearedGate",
+          "start": 15,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_visionOnlySpeedLimit",
+          "start": 16,
+          "length": 5,
+          "endian": "little",
+          "scale": 5,
+          "offset": 0,
+          "unit": "kph/mph"
+        },
+        {
+          "name": "DAS_heaterState",
+          "start": 21,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_forwardCollisionWarning",
+          "start": 22,
+          "length": 2,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_autoparkReady",
+          "start": 24,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_autoParked",
+          "start": 25,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_summonFwdLeashReached",
+          "start": 28,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_summonRvsLeashReached",
+          "start": 29,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_sideCollisionAvoid",
+          "start": 30,
+          "length": 2,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_sideCollisionWarning",
+          "start": 32,
+          "length": 2,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_sideCollisionInhibit",
+          "start": 34,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_csaState",
+          "start": 35,
+          "length": 2,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_laneDepartureWarning",
+          "start": 37,
+          "length": 3,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_fleetSpeedState",
+          "start": 40,
+          "length": 2,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_autopilotHandsOnState",
+          "start": 42,
+          "length": 4,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_autoLaneChangeState",
+          "start": 46,
+          "length": 5,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_summonAvailable",
+          "start": 51,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_statusCounter",
+          "start": 52,
+          "length": 4,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DAS_statusChecksum",
+          "start": 56,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        }
+      ]
+    },
+    "5B8": {
+      "name": "GTW_12VStatus",
+      "comment": "Community DBC mislabels 0x5B8 as GTW_warningMatrix3 (bogus fault bits); on the gateway bus it is GTW_12VStatus. Definition derived from Amond/SMT PT.dbc (BO_ 1464, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "GTW_leadNetAh",
+          "start": 15,
+          "length": 8,
+          "endian": "big",
+          "scale": 0.072818,
+          "offset": 0,
+          "unit": "Ah",
+          "signed": true
+        },
+        {
+          "name": "GTW_eqChgNeeded",
+          "start": 23,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_stdChgNeeded",
+          "start": 22,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_12VState",
+          "start": 21,
+          "length": 6,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_supportCycleCount",
+          "start": 31,
+          "length": 8,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_standbySupportNeeded",
+          "start": 34,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_chgRequested",
+          "start": 33,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_12VBattSupported",
+          "start": 32,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_chgBlockingConditions",
+          "start": 56,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        }
+      ]
+    },
+    "328": {
+      "name": "RCCM_THCHvacDuctSensors",
+      "comment": "Community DBC mislabels 0x328 as GTW_faultMatrix1 (bogus fault bits); on the gateway bus it is RCCM_THCHvacDuctSensors. Definition derived from Amond/SMT PT.dbc (BO_ 808, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "RCCM_TargetLftDischgTemp_DegC",
+          "start": 0,
+          "length": 8,
+          "endian": "little",
+          "scale": 0.5,
+          "offset": -40,
+          "unit": "degC"
+        },
+        {
+          "name": "RCCM_TargetRtDischgTemp_DegC",
+          "start": 8,
+          "length": 8,
+          "endian": "little",
+          "scale": 0.5,
+          "offset": -40,
+          "unit": "degC"
+        },
+        {
+          "name": "RCCM_DefDuctSnsRaw_DegC",
+          "start": 16,
+          "length": 16,
+          "endian": "little",
+          "scale": 0.1,
+          "offset": -40,
+          "unit": "degC"
+        }
+      ]
+    },
+    "202": {
+      "name": "BMS_driveLimits",
+      "comment": "Community DBC mislabels 0x202 as BCFDM_status (bogus fault bits); on the gateway bus it is BMS_driveLimits. Definition derived from Amond/SMT PT.dbc (BO_ 514, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "BMS_minBusVoltage",
+          "start": 0,
+          "length": 16,
+          "endian": "little",
+          "scale": 0.01,
+          "offset": 0,
+          "unit": "V"
+        },
+        {
+          "name": "BMS_maxBusVoltage",
+          "start": 16,
+          "length": 16,
+          "endian": "little",
+          "scale": 0.01,
+          "offset": 0,
+          "unit": "V"
+        },
+        {
+          "name": "BMS_maxChargeCurrent",
+          "start": 32,
+          "length": 14,
+          "endian": "little",
+          "scale": 0.1,
+          "offset": 0,
+          "unit": "A"
+        },
+        {
+          "name": "BMS_maxDischargeCurrent",
+          "start": 48,
+          "length": 14,
+          "endian": "little",
+          "scale": 0.128,
+          "offset": 0,
+          "unit": "A"
+        }
+      ]
+    },
+    "392": {
+      "name": "BMS_version_obsolete",
+      "comment": "Community DBC mislabels 0x392 as EPAS3P_dtcMatrix (bogus fault bits); on the gateway bus it is BMS_version_obsolete. Definition derived from Amond/SMT PT.dbc (BO_ 914, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "BMS_bmsAppMajorVersion",
+          "start": 0,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "BMS_bmsAppMinorVersion",
+          "start": 8,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "BMS_bmsAppSubMinorVersion",
+          "start": 16,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "BMS_bmsCpldVersion",
+          "start": 24,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "BMS_bmsAppCodeVersion",
+          "start": 32,
+          "length": 10,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "BMS_bmsProductVersion",
+          "start": 42,
+          "length": 6,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "BMS_bmsBootCodeVersion",
+          "start": 48,
+          "length": 16,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        }
+      ]
+    },
+    "358": {
+      "name": "GTW_bodyStatus",
+      "comment": "Community DBC mislabels 0x358 as GTW_chargeStatus (bogus fault bits); on the gateway bus it is GTW_bodyStatus. Definition derived from Amond/SMT PT.dbc (BO_ 856, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "MCU_clearDtcs",
+          "start": 0,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_parkingBrakesApplied",
+          "start": 1,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_notEnough12VForDrive",
+          "start": 5,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "SC_vehicleLockStatus",
+          "start": 4,
+          "length": 3,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_driveGoingDown",
+          "start": 6,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_hvacGoingDown",
+          "start": 7,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "SC_alarmStatus",
+          "start": 14,
+          "length": 4,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_driveRailIsOn",
+          "start": 10,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_hvacRailIsOn",
+          "start": 9,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_accRailIsOn",
+          "start": 8,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "MCU_requestOpenChargePortDoor",
+          "start": 15,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "MCU_requestLineChargeCurrent",
+          "start": 16,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": "A"
+        },
+        {
+          "name": "SEC_chargePortRequest",
+          "start": 31,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_okToStartDrive",
+          "start": 24,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_hvacRailReq",
+          "start": 38,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_driveRailReq",
+          "start": 37,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_accRailReq",
+          "start": 36,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_driverIsLeaving",
+          "start": 35,
+          "length": 1,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "SC_keyActive",
+          "start": 33,
+          "length": 2,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "MCU_carInService",
+          "start": 39,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "MCU_lockRequest",
+          "start": 42,
+          "length": 3,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "MCU_requestCloseChargePortDoor",
+          "start": 45,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "GTW_chBusState",
+          "start": 63,
+          "length": 4,
+          "endian": "big",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        }
+      ]
+    },
+    "145": {
+      "name": "DIS_torque3",
+      "comment": "Community DBC mislabels 0x145 as ESP_145h (bogus fault bits); on the gateway bus it is DIS_torque3. Definition derived from Amond/SMT PT.dbc (BO_ 325, used with permission + attribution, file not redistributed).",
+      "length": 3,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "DIS_torqueEstimate",
+          "start": 0,
+          "length": 12,
+          "endian": "little",
+          "scale": 0.5,
+          "offset": 0,
+          "unit": "Nm",
+          "signed": true
+        },
+        {
+          "name": "DIS_torque3Counter",
+          "start": 13,
+          "length": 3,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "DIS_torque3Checksum",
+          "start": 16,
+          "length": 8,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        }
+      ]
     }
   }
 }

@@ -70,16 +70,20 @@ class Fault:
     evidence: str       # hex of the frame that set it
 
 
-def active_faults(decoder, frames, overrides=None):
+def active_faults(engine, frames, overrides=None):
     """Return a de-duplicated list of active Fault across the frames (latest frame
-    per ID wins). Uses classify(): coded signals + enum-faults, state-aware."""
+    per ID wins). Frames whose engine trust is 'analog'/'unknown' are skipped; a
+    decoder without a .trust method (plain Decoder) classifies every frame."""
     latest = {}
     for _t, can_id, data in frames:
         latest[can_id] = data
 
+    trust_of = getattr(engine, "trust", None)
     out, seen = [], set()
     for can_id, data in latest.items():
-        dec = decoder.decode(can_id, data)
+        if trust_of and trust_of(can_id) in ("analog", "unknown"):
+            continue
+        dec = engine.decode(can_id, data)
         if not dec:
             continue
         evidence = data.hex().upper()

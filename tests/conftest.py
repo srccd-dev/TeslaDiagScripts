@@ -10,3 +10,10 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 def decoder():
     from tscan.core import Decoder  # lazy: keeps conftest importable before core exists
     return Decoder(DBC)
+
+
+@pytest.fixture
+def engine(decoder):
+    from tscan.overlay import load_overlay, DecodeEngine
+    overlay_path = os.path.join(REPO, "data", "overlay.json")
+    return DecodeEngine(decoder, load_overlay(overlay_path))

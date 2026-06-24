@@ -3,3 +3,9 @@ __pycache__/
 .pytest_cache/
 *.sqlite
 captures/
+
+# Reference DBCs shared for development ONLY — never commit (Amond/SMT).
+# They live outside the repo; these rules are defense-in-depth if copied in.
+PT.dbc
+BMS-debug.dbc
+*.DTC

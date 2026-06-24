@@ -43,3 +43,19 @@ def test_capture_pcan_id_filter(tmp_path):
     capture_pcan(10, ids=["219"], out_path=out, bus=bus, max_frames=2)
     _meta, frames = parse_capture_file(out)
     assert [f[1] for f in frames] == [0x219]
+
+
+def test_assert_live():
+    import pytest
+    from tscan.capture import _assert_live, CaptureEmpty
+    with pytest.raises(CaptureEmpty):
+        _assert_live(0, 5)        # zero frames in the window -> dead link
+    _assert_live(3, 5)            # frames flowing -> no raise
+
+
+def test_capture_pcan_aborts_on_dead_link(tmp_path):
+    import pytest
+    from tscan.capture import CaptureEmpty
+    bus = _FakeBus([])            # empty -> no frames ever
+    with pytest.raises(CaptureEmpty):
+        capture_pcan(10, out_path=str(tmp_path / "dead.csv"), bus=bus, liveness_secs=0)

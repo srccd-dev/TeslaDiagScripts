@@ -16,6 +16,7 @@ MODULE_PREFIXES = {
     "CP": "Charge Port",
     # thermal
     "THC": "Thermal Controller",
+    "RCCM": "Cabin HVAC (RCCM)",
     # chassis / dynamics
     "TAS": "Air Suspension", "EPAS": "Steering", "EPAS3P": "Steering (EPAS3)",
     "SCCM": "Steering Column", "IBST": "iBooster Brake", "EPBM": "Electronic Park Brake",

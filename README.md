@@ -15,24 +15,43 @@ the community-maintained S/X DBC. It builds on a lot of prior community
 effort — ScanMyTesla, the DBC reverse-engineering community, the Tesla Motors
 Club / Tesla Owners Online diagnostic-port threads, the OpenVehicles project,
 [Tessie's alert directory](https://stats.tessie.com/alerts), and the `cantools`
-library. Contributions, corrections, and shared captures are welcome.
+library. Special thanks to **Amond (ScanMyTesla)** for sharing the S/X powertrain
+DBC and permitting its use as a reference for the decode overlay definitions.
+Contributions, corrections, and shared captures are welcome.
 
 ## Status
 
 A single CLI, `tesla_scan.py`, with subcommands over a shared `cantools`-backed
-decode core. Implemented and unit-tested (25 tests, no vehicle required):
+decode core. Implemented and unit-tested (51 tests, no vehicle required):
 
 - **`capture`** — record raw CAN frames to a timestamped, re-decodable log.
   Two backends: a genuine **STN/ELM serial** adapter (`--port`), or a **PEAK
   PCAN** interface (`--pcan`, via `python-can`) which is hardware-buffered and
   **drop-free** — so slow/rare frames (`0x219`, alertMatrix) aren't lost the way
-  they are on ELM. Both write the identical capture format.
+  they are on ELM. Both write the identical capture format. A **liveness check
+  aborts immediately** if no frames arrive (a dead link never silently wastes a
+  drive), and writes are **flushed per frame** (a stop/crash/sleep loses nothing).
+  **For moving/drive captures, prefer `--pcan`** — Bluetooth SPP is unreliable in
+  a car (it can open but deliver nothing). Keep the laptop awake; don't run a
+  separate probe right before the capture.
 - **`faults`** — classify active fault/alert codes by **class** (`fault`/`warning`/
   `alert`/`selftest`/`status`) and **severity** (CRITICAL/WARNING/STATUS), **state-aware**
   (a self-test reading `PASSED` is not flagged; `FAILED` is), with plain-language meaning,
   module, and a link out to [Tessie's alert page](https://stats.tessie.com/alerts) for each
   code's authoritative description (we link, never scrape). Surfaces pre-fault `warning`s
   and failing self-tests as early signals.
+- **decode overlay** — `data/overlay.json` is a hand-authored, MIT-licensed set of
+  per-message corrections over the community DBC: it fixes mislabeled frames (e.g.
+  `0x3F8`, which the DBC calls `DCDC_alertMatrix1` but is actually cabin-HVAC duct
+  temperatures), declares true wire lengths for short frames (`0x212`/`0x232`), and tags each frame's
+  `trust` (`faults`/`analog`/`unknown`) so `faults` only flags trustworthy frames.
+  This removes the bulk of the old false positives; coverage grows one evidence-backed
+  entry at a time. Characterize a new frame with `python tools/profile_frame.py
+  <capture.csv> <hexid>`.
+
+  Corrected definitions (e.g. `0x3F8` cabin-HVAC duct temps) are derived with reference
+  to the S/X powertrain DBC shared by **Amond (ScanMyTesla)**, used with permission and
+  attribution; the source files themselves are not redistributed.
 - **`dump`** — decode every signal the DBC knows in a capture, grouped by
   module/ECU (`--module`, `--grep` filters). ~2,000 signals came out of a 45 s
   capture on a 2016 Model X — vs the ~300 typical surface apps show.
@@ -86,10 +105,13 @@ Early, honest work — corrections welcome:
 - **`faults` over-reports.** It flags every non-zero `_w/f/u###_` bit plus a
   small state watch-list. That includes chronic version/config flags and
   permission/status bits (e.g. `noChargeAllowed` when parked), so the raw list
-  mixes real faults with noise. Each code links out to Tessie for triage in the
-  meantime; the planned fix is a **relevance layer ranking by Tessie fleet
-  incidence rate** (a `<0.01%` code is genuinely rare/significant; a multi-percent
-  one is fleet noise).
+  mixes real faults with noise. The decode overlay (`data/overlay.json`) now
+  suppresses the worst offenders — mislabeled analog frames (`0x3F8` HVAC duct
+  temps decoded as DCDC faults) and short frames with unreliable DBC enums
+  (`0x212`/`0x232` light-status frames) — but noise from untouched frames
+  remains. Each code links out to Tessie for triage; the planned next layer is a
+  **relevance ranking by Tessie fleet incidence rate** (a `<0.01%` code is
+  genuinely rare/significant; a multi-percent one is fleet noise).
 - **Module map is partial.** Unmapped name prefixes show as `Unknown (PREFIX)`.
 - **DBC vs firmware gaps.** The community DBC lags some firmware: e.g.
   `BMS_f027` is the real-world drive-unit isolation fault (`SW_Drive_Iso`) but is

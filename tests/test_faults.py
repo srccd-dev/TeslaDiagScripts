@@ -102,3 +102,30 @@ def test_cmd_faults_severity_output(capsys):
     assert "CRITICAL" in out          # BMS_state=FAULT is CRITICAL
     assert "BMS_state" in out
     assert "active code" in out       # summary header present
+
+
+class _FakeEngine:
+    """Minimal engine: returns one coded-fault signal, with a settable trust."""
+    def __init__(self, trust_level):
+        self._trust = trust_level
+
+    def decode(self, can_id, data):
+        return {"BMS_f071_someFault": 1}
+
+    def trust(self, can_id):
+        return self._trust
+
+
+def test_active_faults_skips_untrusted_frames():
+    frames = [(0, 0x123, b"\x01")]
+    assert active_faults(_FakeEngine("analog"), frames) == []
+    assert active_faults(_FakeEngine("unknown"), frames) == []
+    flagged = active_faults(_FakeEngine("faults"), frames)
+    assert [f.signal for f in flagged] == ["BMS_f071_someFault"]
+
+
+def test_active_faults_without_trust_attr_behaves_as_before(decoder):
+    # a plain Decoder has no .trust -> all frames classified (legacy behavior)
+    frames = [(0, 0x219, bytes([0x00, 0x80, 0x7F, 0x00, 0x82, 0x02, 0x00, 0x04]))]
+    faults = active_faults(decoder, frames)
+    assert any(f.signal == "BMS_state" for f in faults)

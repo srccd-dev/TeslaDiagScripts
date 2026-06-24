@@ -9,6 +9,21 @@ File format (CSV):
 import re
 
 
+class CaptureEmpty(RuntimeError):
+    """Raised when a live capture receives no frames within the liveness window —
+    so a dead adapter/link aborts loudly instead of silently 'running' for a whole
+    drive."""
+
+
+def _assert_live(n_frames, liveness_secs):
+    """Abort if no frames have arrived once the liveness window has elapsed."""
+    if n_frames == 0:
+        raise CaptureEmpty(
+            f"No CAN frames received in {liveness_secs:.0f}s - the link looks dead "
+            f"(adapter off / wrong port / Bluetooth dropped). Aborting so a drive "
+            f"isn't wasted. Reset the adapter, or use --pcan (wired) for moving captures.")
+
+
 def parse_capture_file(path):
     """Return (meta: dict, frames: list[(t_ms:int, can_id:int, data:bytes)])."""
     meta, frames = {}, []
@@ -63,15 +78,102 @@ class CaptureWriter:
 
     def write(self, t_ms, can_id, data):
         self.fh.write(f"{t_ms},{can_id:03X},{data.hex().upper()}\n")
+        self.fh.flush()   # durable per frame: a stop/crash never loses the capture
 
     def __exit__(self, *exc):
         if self.fh:
             self.fh.close()
 
 
-def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200):
-    """Live serial capture using the proven STN/ELM monitor. Ports the logic from
-    tesla_iso_capture.py. Writes frames to out_path. Returns out_path.
+# ELM327 CAN protocols to try on a Tesla diagnostic bus, in order. Tesla almost
+# always answers on 6 (ISO 15765-4, 11-bit / 500k); the rest are fallbacks.
+_CAN_PROTOCOLS = ("6", "7", "8", "9")
+
+
+def _elm_cmd(s, text, settle=0.4, read_bytes=4096):
+    """Send an AT/ST command, wait a fixed `settle`, return the decoded reply.
+
+    Mirrors the proven tesla_obd_capture.py timing (write -> fixed sleep -> bulk
+    read). This connected reliably where our earlier '>'-prompt-polling read did
+    not — the OBDLink in raw mode doesn't always emit a clean prompt to poll on."""
+    import time
+    s.reset_input_buffer()
+    s.write((text + "\r").encode())
+    time.sleep(settle)
+    return s.read(read_bytes).decode(errors="replace")
+
+
+def _elm_connect(s):
+    """Full-reset the adapter and CONFIRM the ELM327 banner before anything else.
+
+    A bare CR halts any monitor mode left running, then ATZ resets; some clones
+    answer only on the second reset, so we retry once — this double-ATZ is the
+    'fails first, connects on retry' behaviour. Crucially the banner check proves
+    the Bluetooth link can both write AND read, so a dead/wedged link is caught
+    HERE at connect, not silently mid-drive. Returns the banner line."""
+    import time
+    s.write(b"\r")
+    time.sleep(0.3)
+    s.reset_input_buffer()
+    resp = _elm_cmd(s, "ATZ", settle=2.0)
+    if "ELM327" not in resp.upper():
+        resp = _elm_cmd(s, "ATZ", settle=2.0)   # some clones answer only on 2nd reset
+    if "ELM327" not in resp.upper():
+        raise CaptureEmpty(
+            f"Adapter did not return an ELM327 banner (got {resp.strip()!r}). "
+            f"The OBDLink isn't responding - reset it (unplug/replug) and re-pair "
+            f"Bluetooth, then retry, or use --pcan.")
+    lines = [ln.strip() for ln in resp.splitlines() if ln.strip()]
+    banner = next((ln for ln in lines if "ELM327" in ln.upper()), lines[-1] if lines else "")
+    return banner[:40]
+
+
+def _detect_protocol(s, probe_secs=3.0):
+    """Try each CAN protocol briefly; keep the first that carries live frames.
+
+    Mirrors tesla_obd_capture.py's auto-detect. Returns as soon as a real frame
+    is seen (so the common case — Tesla on protocol 6 — is fast). Raises
+    CaptureEmpty if every protocol is silent (car asleep / port unpowered)."""
+    import time
+    for proto in _CAN_PROTOCOLS:
+        _elm_cmd(s, "ATSP" + proto)
+        s.reset_input_buffer()
+        s.write(b"ATMA\r")
+        t0, part, seen = time.time(), "", False
+        while time.time() - t0 < probe_secs and not seen:
+            n = s.in_waiting
+            if n:
+                part += s.read(n).decode(errors="replace")
+                lines = part.split("\r")
+                part = lines.pop()
+                for ln in lines:
+                    if _parse_monitor_line(ln):
+                        seen = True
+                        break
+            else:
+                time.sleep(0.02)
+        s.write(b"\r")            # any byte halts ATMA
+        time.sleep(0.2)
+        s.reset_input_buffer()
+        if seen:
+            return proto
+    raise CaptureEmpty(
+        "Connected to the adapter but saw no CAN frames on any protocol. The bus "
+        "looks idle (car asleep) or the diagnostic port is unpowered - wake the "
+        "vehicle and retry.")
+
+
+def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200,
+                 liveness_secs=5):
+    """Live serial capture via an STN/ELM adapter (e.g. OBDLink LX).
+
+    Connect/init/auto-detect logic is ported from the empirically-reliable
+    tesla_obd_capture.py: full ATZ reset with banner verification, no
+    write_timeout (a short one fired spuriously on healthy-but-slow BT writes),
+    fixed-settle commands, and CAN-protocol auto-detection. On top of that we
+    keep the suite's improvements: stream to the capture file with a per-frame
+    flush (a stop/crash/sleep loses nothing), an optional --ids hardware filter,
+    and a liveness abort. Writes frames to out_path; returns out_path.
     Requires hardware; not unit-tested."""
     import time
     import serial  # pyserial
@@ -80,71 +182,98 @@ def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200)
     last = None
     for _ in range(6):
         try:
+            # No write_timeout: the proven tesla_obd_capture.py blocks on writes
+            # and connects reliably; our earlier 5s write_timeout aborted healthy
+            # BT writes with "Write timeout". A dead link is instead caught by the
+            # banner check (_elm_connect) and the liveness check below.
             s = serial.Serial(port, baud, timeout=1.0)
             break
         except Exception as e:  # transient BT semaphore timeouts -> retry
             last = e
             time.sleep(0.9)
     if s is None:
-        raise last
-
-    def cmd(c, read_for=1.2):
-        s.reset_input_buffer()
-        s.write((c + "\r").encode())
-        time.sleep(0.08)
-        buf, t0 = b"", time.time()
-        while time.time() - t0 < read_for:
-            n = s.in_waiting
-            if n:
-                buf += s.read(n)
-                if b">" in buf:
-                    break
-            else:
-                time.sleep(0.03)
-        return buf.decode(errors="replace").replace("\r", " ").replace(">", "").strip()
-
-    for c in ("ATWS", "ATE0", "ATL0", "ATS1", "ATH1", "ATCAF0", "ATSP6"):
-        cmd(c)
-    adapter = cmd("STI")[:40]
-    meta = dict(meta or {})
-    meta.setdefault("adapter", adapter)
-    meta.setdefault("port", port)
-
-    start = "ATMA"
-    if ids:
-        cmd("STFAC")
-        for cid in ids:
-            cmd(f"STFAP {cid},7FF")
-        start = "STM"
+        raise CaptureEmpty(
+            f"Could not open {port} after retries ({last}). Reset the OBDLink "
+            f"(unplug/replug) and re-pair Bluetooth, then retry — or use --pcan.")
 
     out_path = out_path or f"capture_{int(time.time())}.csv"
-    s.reset_input_buffer()
-    s.write((start + "\r").encode())
-    t0, part = time.time(), ""
-    with CaptureWriter(out_path, meta) as w:
+    try:
+        banner = _elm_connect(s)              # reset + verify ELM327 banner
+        for c in ("ATE0", "ATL0", "ATS1", "ATH1", "ATCAF0"):
+            _elm_cmd(s, c)                     # echo off, LF off, spaces on, headers on, raw
+        meta = dict(meta or {})
+        meta.setdefault("adapter", banner)
+        meta.setdefault("port", port)
+
+        proto = _detect_protocol(s)           # pick the protocol carrying live traffic
+        meta.setdefault("protocol", f"ATSP{proto}")
+        _elm_cmd(s, "ATSP" + proto)
+
+        start = "ATMA"
+        if ids:
+            _elm_cmd(s, "STFAC")
+            for cid in ids:
+                _elm_cmd(s, f"STFAP {cid},7FF")
+            start = "STM"
+
+        def _arm():
+            s.reset_input_buffer()
+            s.write((start + "\r").encode())
+
+        _arm()
+        t0 = time.time()
+        part, n, live_checked, last_rx = "", 0, False, time.time()
+        STALL = 2.0   # seconds of silence -> re-arm (also re-arm immediately on BUFFER FULL)
+        with CaptureWriter(out_path, meta) as w:
+            try:
+                while time.time() - t0 < seconds:
+                    navail = s.in_waiting
+                    halt = False
+                    if navail:
+                        part += s.read(navail).decode(errors="replace")
+                        lines = part.split("\r")
+                        part = lines.pop()
+                        for ln in lines:
+                            if "BUFFER FULL" in ln.upper() or "STOPPED" in ln.upper():
+                                halt = True   # adapter buffer overran on a busy bus
+                                continue
+                            fr = _parse_monitor_line(ln)
+                            if fr:
+                                w.write(int((time.time() - t0) * 1000), fr[0], fr[1])
+                                n += 1
+                                last_rx = time.time()
+                    else:
+                        time.sleep(0.02)
+                    # On a full-rate bus the ELM monitor buffer-fills in a fraction of
+                    # a second and stops; re-arm so a drive keeps flowing (rolling
+                    # bursts) instead of dying after the first burst. Filtered captures
+                    # that fit under the BT ceiling never hit this.
+                    if halt or (time.time() - last_rx) > STALL:
+                        _arm()
+                        last_rx = time.time()
+                        part = ""
+                    if not live_checked and (time.time() - t0) >= liveness_secs:
+                        live_checked = True
+                        _assert_live(n, liveness_secs)   # abort loudly on a dead link
+            except KeyboardInterrupt:
+                pass
+    except serial.SerialException as e:
+        # port error mid-capture — fail fast and clearly
+        raise CaptureEmpty(
+            f"Adapter stopped responding ({e}). The Bluetooth link is likely wedged "
+            f"- reset the OBDLink (unplug/replug) and re-pair, then retry, or use --pcan.")
+    finally:
         try:
-            while time.time() - t0 < seconds:
-                n = s.in_waiting
-                if n:
-                    part += s.read(n).decode(errors="replace")
-                    lines = part.split("\r")
-                    part = lines.pop()
-                    for ln in lines:
-                        fr = _parse_monitor_line(ln)
-                        if fr:
-                            w.write(int((time.time() - t0) * 1000), fr[0], fr[1])
-                else:
-                    time.sleep(0.02)
-        except KeyboardInterrupt:
+            s.write(b"\r")
+            time.sleep(0.2)
+            s.close()
+        except Exception:
             pass
-    s.write(b"\r")
-    time.sleep(0.2)
-    s.close()
     return out_path
 
 
 def capture_pcan(seconds, channel="PCAN_USBBUS1", bitrate=500000, ids=None,
-                 out_path=None, meta=None, bus=None, max_frames=None):
+                 out_path=None, meta=None, bus=None, max_frames=None, liveness_secs=5):
     """Live capture via a PEAK PCAN interface (python-can). Hardware-buffered and
     drop-free — unlike the STN/ELM path, so slow frames (0x219, alertMatrix) and
     rare frames aren't lost. Writes the same capture-file format as the rest of
@@ -163,21 +292,21 @@ def capture_pcan(seconds, channel="PCAN_USBBUS1", bitrate=500000, ids=None,
     meta.setdefault("protocol", f"CAN-{bitrate}")
     id_set = set(int(x, 16) for x in ids) if ids else None
     out_path = out_path or f"capture_pcan_{int(time.time())}.csv"
-    t0, n = time.time(), 0
+    t0, n, live_checked = time.time(), 0, False
     try:
         with CaptureWriter(out_path, meta) as w:
             while time.time() - t0 < seconds:
                 msg = bus.recv(timeout=0.5)
-                if msg is None:
-                    if max_frames is not None:   # test/drain: stop when source dry
+                if msg is not None and (id_set is None or msg.arbitration_id in id_set):
+                    w.write(int((time.time() - t0) * 1000),
+                            msg.arbitration_id, bytes(msg.data))
+                    n += 1
+                    if max_frames is not None and n >= max_frames:
                         break
-                    continue
-                if id_set is not None and msg.arbitration_id not in id_set:
-                    continue
-                w.write(int((time.time() - t0) * 1000),
-                        msg.arbitration_id, bytes(msg.data))
-                n += 1
-                if max_frames is not None and n >= max_frames:
+                if not live_checked and (time.time() - t0) >= liveness_secs:
+                    live_checked = True
+                    _assert_live(n, liveness_secs)   # abort loudly on a dead link
+                if msg is None and max_frames is not None:   # test/drain: source dry
                     break
     finally:
         if own_bus:

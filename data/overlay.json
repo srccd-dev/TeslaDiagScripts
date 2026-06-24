@@ -1297,6 +1297,26 @@
           "unit": ""
         }
       ]
+    },
+    "314": {
+      "trust": "unknown",
+      "comment": "Community DBC labels EPB_alertMatrix2 (leftPOpen/spiOpen). Toolbox CAN Explorer (2026-06-24, VIN ...S00509) shows NO EPB/park-brake alerts or DTCs (ECU History 0). Decode noise - suppressed from faults; not in PT.dbc so no correct definition yet."
+    },
+    "257": {
+      "trust": "unknown",
+      "comment": "Community DBC labels TAS_warningMatrix5 (axle alerts). High-variance data-like bytes; Toolbox shows the real TAS alerts are comms/limp (a094/a098/a214/a218), not axle. Decode noise - suppressed."
+    },
+    "31F": {
+      "trust": "unknown",
+      "comment": "Community DBC labels MSMD_status InitStatus as a fault. No corresponding vehicle alert/DTC in Toolbox. Decode noise - suppressed."
+    },
+    "2C8": {
+      "trust": "unknown",
+      "comment": "Community DBC labels MCU_BCS2L_Commands (a seat fold-flat command) and it flags CRITICAL. High-variance command/counter frame; no matching vehicle alert. Decode noise - suppressed."
+    },
+    "286": {
+      "trust": "unknown",
+      "comment": "Community DBC labels FC_warningMatrix4 w193_FCAlertPlaceholder - a literal placeholder signal. No matching vehicle alert. Decode noise - suppressed."
     }
   }
 }

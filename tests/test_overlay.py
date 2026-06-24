@@ -134,3 +134,16 @@ def test_batch2_frames_all_analog_and_suppressed(engine):
         assert engine.trust(cid) == "analog"
     frames = [(0, cid, bytes(range(8))) for cid in BATCH2]
     assert active_faults(engine, frames) == []
+
+
+# --- Noise frames: community DBC mislabels them as faults, but Toolbox CAN
+# Explorer confirmed the vehicle reports no such alerts/DTCs. trust:unknown ->
+# suppressed from faults (no correct definition available; PT.dbc lacks them) ---
+NOISE = [0x314, 0x257, 0x31F, 0x2C8, 0x286]
+
+
+def test_noise_frames_unknown_and_suppressed(engine):
+    for cid in NOISE:
+        assert engine.trust(cid) == "unknown"
+    frames = [(0, cid, bytes(range(8))) for cid in NOISE]
+    assert active_faults(engine, frames) == []

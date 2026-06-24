@@ -54,7 +54,12 @@ decode core. Implemented and unit-tested (51 tests, no vehicle required):
   attribution; the source files themselves are not redistributed.
 - **`dump`** — decode every signal the DBC knows in a capture, grouped by
   module/ECU (`--module`, `--grep` filters). ~2,000 signals came out of a 45 s
-  capture on a 2016 Model X — vs the ~300 typical surface apps show.
+  capture on a 2016 Model X — vs the ~300 typical surface apps show. An unfiltered
+  `dump` also prints a derived **A/C Health** summary when the capture carries the
+  HVAC signals: ambient vs. vent-duct temperature (the cooling delta), evaporator
+  temp, compressor state, and a heuristic HEALTHY / MARGINAL / WEAK verdict (only
+  when the compressor is running). The delta and evaporator temp are exact; the
+  verdict thresholds are heuristic.
 - **`trend`** — store captures in SQLite and diff a capture against a baseline to
   flag new faults, enum state changes, and numeric drift over time
   (`ingest` / `baseline` / `diff` / `history`).

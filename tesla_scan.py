@@ -11,6 +11,7 @@ from tscan.dump import dump_signals
 from tscan.meaning import tessie_link
 from tscan.trend import TrendStore
 from tscan.overlay import load_overlay, DecodeEngine
+from tscan.hvac import ac_health, format_ac_health
 
 REPO = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DBC = os.path.join(REPO, "data", "tesla_models.dbc")
@@ -54,6 +55,12 @@ def cmd_faults(args):
 def cmd_dump(args):
     engine = DecodeEngine(Decoder(args.dbc), load_overlay(args.overlay))
     _meta, frames = parse_capture_file(args.capture)
+    # Derived A/C-health summary: only on an unfiltered dump, and only when the
+    # capture actually carries the HVAC signals it needs.
+    if not args.module and not args.grep:
+        metrics = ac_health(engine, frames)
+        if metrics:
+            print(format_ac_health(metrics) + "\n")
     grouped = dump_signals(engine, frames, module=args.module, grep=args.grep)
     if not grouped:
         print("No signals matched.")

@@ -147,3 +147,25 @@ def test_noise_frames_unknown_and_suppressed(engine):
         assert engine.trust(cid) == "unknown"
     frames = [(0, cid, bytes(range(8))) for cid in NOISE]
     assert active_faults(engine, frames) == []
+
+
+# --- 0x219: the community DBC calls it BMS_status (5B). On this bus it is really
+# CHGPH2_status (8B, charger phase 2) per PT.dbc. Proof: the frame is absent across
+# 30 min of pure driving (0 frames) but present 10,237x while supercharging - a BMS
+# frame broadcasts constantly, a charger frame only when charging. The bad decode
+# produced a bogus CRITICAL "BMS_state=FAULT" on every charge. ---
+REAL_219 = bytes.fromhex("00C07F006F020000")        # captured mid-supercharge
+FAULTY_219 = bytes.fromhex("00007F0082020000")      # the frame that faked BMS_state=FAULT
+
+
+def test_0x219_decodes_as_charger_not_bms(engine):
+    dec = engine.decode(0x219, REAL_219)
+    assert "CHGPH2_mainState" in dec                 # real charger telemetry
+    assert "BMS_state" not in dec                    # the mislabel is gone
+    assert "BMS_isolationResistance" not in dec      # was a meaningless 0
+    assert engine.trust(0x219) == "analog"
+
+
+def test_0x219_no_longer_fakes_a_bms_fault(engine):
+    # this exact frame used to emit "[CRITICAL] BMS_state = FAULT" during charging
+    assert active_faults(engine, [(0, 0x219, FAULTY_219)]) == []

@@ -1317,6 +1317,161 @@
     "286": {
       "trust": "unknown",
       "comment": "Community DBC labels FC_warningMatrix4 w193_FCAlertPlaceholder - a literal placeholder signal. No matching vehicle alert. Decode noise - suppressed."
+    },
+    "219": {
+      "name": "CHGPH2_status",
+      "comment": "Community DBC labels 0x219 BMS_status (5B) - WRONG on this bus. Evidence: the frame is 8B on the wire (matches PT.dbc CHGPH2_status), and it is COMPLETELY ABSENT across 30min of pure driving (0 frames) while present 10,237x during supercharging - a BMS frame would broadcast constantly, a charger frame only when charging. The community decode yields a bogus CRITICAL 'BMS_state=FAULT' and a meaningless 'BMS_isolationResistance=0'. Real BMS_status/iso resistance is NOT on the OBD bus. Definition derived from Amond/SMT PT.dbc (BO_ 537, used with permission + attribution, file not redistributed).",
+      "length": 8,
+      "trust": "analog",
+      "replace_signals": true,
+      "signals": [
+        {
+          "name": "CHGPH2_PHEnableLine",
+          "start": 0,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_VDiffOK",
+          "start": 1,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_antiSpark",
+          "start": 2,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_preCharge",
+          "start": 3,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_mainState",
+          "start": 4,
+          "length": 4,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_voltageLimitAchieved",
+          "start": 8,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_requestHVACPowerOn",
+          "start": 9,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_retryCount",
+          "start": 12,
+          "length": 2,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_lineOffset",
+          "start": 14,
+          "length": 9,
+          "endian": "little",
+          "scale": 0.5,
+          "offset": 0,
+          "unit": "V",
+          "signed": true
+        },
+        {
+          "name": "CHGPH2_line2Offset",
+          "start": 23,
+          "length": 9,
+          "endian": "little",
+          "scale": 0.5,
+          "offset": 0,
+          "unit": "V",
+          "signed": true
+        },
+        {
+          "name": "CHGPH2_vGDV",
+          "start": 32,
+          "length": 8,
+          "endian": "little",
+          "scale": 0.1,
+          "offset": 0,
+          "unit": "V"
+        },
+        {
+          "name": "CHGPH2_subState",
+          "start": 40,
+          "length": 6,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_pwmEnable",
+          "start": 46,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_pllLocked",
+          "start": 47,
+          "length": 1,
+          "endian": "little",
+          "scale": 1,
+          "offset": 0,
+          "unit": ""
+        },
+        {
+          "name": "CHGPH2_GFCICurrent",
+          "start": 48,
+          "length": 8,
+          "endian": "little",
+          "scale": 0.2,
+          "offset": 0,
+          "unit": "mA"
+        },
+        {
+          "name": "CHGPH2_IBatCmd",
+          "start": 56,
+          "length": 8,
+          "endian": "little",
+          "scale": 0.25,
+          "offset": 0,
+          "unit": "A"
+        }
+      ]
     }
   }
 }

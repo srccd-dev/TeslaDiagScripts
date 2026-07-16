@@ -1,0 +1,6 @@
+# tesla_scan capture v1
+# synthetic: 0x021 BMS_alertMatrix2 byte0 0x40 -> BMS_f071 fault (CRITICAL).
+# Used to exercise the CLI's severity-ranked output with a genuine coded fault.
+t_ms,can_id,data_hex
+0,021,4000000000000000
+30,021,4000000000000000

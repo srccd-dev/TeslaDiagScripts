@@ -94,14 +94,29 @@ def test_active_faults_coded_severity(decoder):
 
 
 def test_cmd_faults_severity_output(capsys):
+    # Uses a genuine coded fault (0x021 -> BMS_f071). NOTE: this previously used
+    # sample_0219.csv on the assumption 0x219 = BMS_status with BMS_state=FAULT.
+    # 0x219 is really CHGPH2_status (charger) on this bus, so it correctly yields
+    # no faults now -- see test_0x219_* in test_overlay.py.
+    import os
+    import tesla_scan
+    from tests.conftest import FIXTURES
+    tesla_scan.main(["faults", os.path.join(FIXTURES, "sample_f071.csv")])
+    out = capsys.readouterr().out
+    assert "CRITICAL" in out          # BMS_f071 is a fault -> CRITICAL
+    assert "f071" in out
+    assert "active code" in out       # summary header present
+
+
+def test_cmd_faults_0219_is_charger_no_faults(capsys):
+    # regression: 0x219 (charger frame) must NOT emit a bogus BMS_state fault
     import os
     import tesla_scan
     from tests.conftest import FIXTURES
     tesla_scan.main(["faults", os.path.join(FIXTURES, "sample_0219.csv")])
     out = capsys.readouterr().out
-    assert "CRITICAL" in out          # BMS_state=FAULT is CRITICAL
-    assert "BMS_state" in out
-    assert "active code" in out       # summary header present
+    assert "BMS_state" not in out
+    assert "No active fault" in out
 
 
 class _FakeEngine:

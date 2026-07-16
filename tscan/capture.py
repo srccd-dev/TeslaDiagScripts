@@ -15,6 +15,17 @@ class CaptureEmpty(RuntimeError):
     drive."""
 
 
+def _now_iso():
+    """Wall-clock start stamp for a capture, ISO8601 with timezone offset.
+
+    Frames carry only relative t_ms, so without this a capture can't be aligned
+    against an absolute clock (e.g. correlating an OBD log with Toolbox's
+    datatank timestamps). Timezone-aware on purpose: naive stamps are ambiguous.
+    """
+    from datetime import datetime
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
 def _assert_live(n_frames, liveness_secs):
     """Abort if no frames have arrived once the liveness window has elapsed."""
     if n_frames == 0:
@@ -204,6 +215,7 @@ def capture_live(port, seconds, ids=None, meta=None, out_path=None, baud=115200,
         meta = dict(meta or {})
         meta.setdefault("adapter", banner)
         meta.setdefault("port", port)
+        meta.setdefault("start", _now_iso())
 
         proto = _detect_protocol(s)           # pick the protocol carrying live traffic
         meta.setdefault("protocol", f"ATSP{proto}")
@@ -290,6 +302,7 @@ def capture_pcan(seconds, channel="PCAN_USBBUS1", bitrate=500000, ids=None,
     meta = dict(meta or {})
     meta.setdefault("adapter", f"PCAN {channel}")
     meta.setdefault("protocol", f"CAN-{bitrate}")
+    meta.setdefault("start", _now_iso())
     id_set = set(int(x, 16) for x in ids) if ids else None
     out_path = out_path or f"capture_pcan_{int(time.time())}.csv"
     t0, n, live_checked = time.time(), 0, False

@@ -37,6 +37,20 @@ def test_capture_pcan_writes_capture_file(tmp_path):
     assert bus.shut is False
 
 
+def test_capture_pcan_records_start_timestamp(tmp_path):
+    # An absolute start time is required to align a capture against Toolbox's
+    # clock (our frames carry only relative t_ms).
+    from datetime import datetime
+    bus = _FakeBus([_FakeMsg(0x219, REAL_0219)])
+    out = str(tmp_path / "p.csv")
+    capture_pcan(10, out_path=out, bus=bus, max_frames=1)
+    meta, _frames = parse_capture_file(out)
+    assert "start" in meta
+    ts = datetime.fromisoformat(meta["start"])        # ISO8601 w/ tz offset
+    assert ts.tzinfo is not None                      # unambiguous, not naive
+    assert abs((datetime.now().astimezone() - ts).total_seconds()) < 60
+
+
 def test_capture_pcan_id_filter(tmp_path):
     bus = _FakeBus([_FakeMsg(0x219, REAL_0219), _FakeMsg(0x102, bytes([1, 2, 3]))])
     out = str(tmp_path / "p.csv")

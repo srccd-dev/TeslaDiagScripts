@@ -1,8 +1,8 @@
 """Characterize a CAN id's on-wire structure vs the DBC: length distribution,
 distinct payloads, per-byte value variance, and DBC length/mux expectations.
 
-Usage:
-    python tools/profile_frame.py <capture.csv> <hexid> [<hexid> ...]
+Run as a module (the repo root must be on sys.path):
+    python -m tools.profile_frame <capture.csv> <hexid> [<hexid> ...]
 """
 import sys
 from collections import Counter
